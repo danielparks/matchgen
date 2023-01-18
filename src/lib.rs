@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-struct Node<V> {
+pub struct Node<V> {
     pub leaf: Option<V>,
     pub branch: HashMap<u8, Node<V>>,
 }
@@ -40,7 +40,28 @@ where
         node.leaf = Some(value);
     });
 
-    println!("{root:?}");
+    render(&root, 0, None);
+}
+
+pub fn render<V>(node: &Node<V>, level: usize, fallback: Option<&V>)
+where
+    V: fmt::Debug,
+{
+    if node.branch.is_empty() {
+        // Terminal. Could be None or Some(_).
+        print!("{:?}", node.leaf);
+    } else {
+        let indent = "    ".repeat(level);
+        println!("match iter.next() {{");
+        node.branch.iter().for_each(|(chunk, child)| {
+            print!("{indent}    {chunk:?} => ");
+            render(child, level + 1, node.leaf.as_ref().or(fallback));
+            println!(",");
+        });
+        // FIXME: what happens if all possibilities are exhausted?
+        println!("{indent}    _ => {:?},", node.leaf.as_ref().or(fallback));
+        print!("{indent}}}");
+    }
 }
 
 #[cfg(test)]
