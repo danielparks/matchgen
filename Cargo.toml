@@ -1,0 +1,19 @@
+[package]
+name = "iter-matcher"
+version = "0.1.0"
+authors = ["Daniel Parks <oss-iter-matcher@demonhorse.org>"]
+description = ""
+homepage = "https://github.com/danielparks/iter-matcher"
+repository = "https://github.com/danielparks/iter-matcher"
+documentation = "https://github.com/danielparks/iter-matcher"
+readme = "README.md"
+keywords = []
+categories = [] # https://crates.io/category_slugs
+license = "MIT OR Apache-2.0"
+edition = "2021"
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+[dev-dependencies]
+assert2 = "0.3.7"
