@@ -1,37 +1,50 @@
-/// Encrypt single byte with secure ROT13 function
-///
-/// ~~~
-/// use iter_matcher::rot13_u8;
-/// assert_eq!(rot13_u8(b'a'), b'n')
-/// ~~~
-pub fn rot13_u8(c: u8) -> u8 {
-    if (b'a'..=b'z').contains(&c) {
-        ((c - b'a') + 13) % 26 + b'a'
-    } else if (b'A'..=b'Z').contains(&c) {
-        ((c - b'A') + 13) % 26 + b'A'
-    } else {
-        c
+use std::collections::HashMap;
+use std::fmt;
+
+struct Node<V> {
+    pub leaf: Option<V>,
+    pub branch: HashMap<u8, Node<V>>,
+}
+
+impl<V> Default for Node<V> {
+    fn default() -> Self {
+        Self {
+            leaf: None,
+            branch: HashMap::new(),
+        }
     }
 }
 
-/// Encrypt string with secure ROT13 function
-///
-/// ~~~
-/// use iter_matcher::rot13;
-/// assert_eq!(rot13("super secure"), "fhcre frpher")
-/// ~~~
-pub fn rot13(source: &str) -> String {
-    let mut buffer: Vec<u8> = Vec::with_capacity(source.len());
-    for c in source.bytes() {
-        buffer.push(rot13_u8(c));
+impl<V: fmt::Debug> fmt::Debug for Node<V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Node")
+            .field("leaf", &self.leaf)
+            .field("branch", &self.branch)
+            .finish()
     }
-    String::from_utf8(buffer).unwrap()
+}
+
+/// Generate matcher
+pub fn generate<'a, K, V, I>(key_values: I)
+where
+    K: IntoIterator<Item = &'a u8>,
+    I: IntoIterator<Item = (K, V)>,
+    V: fmt::Debug,
+{
+    let mut root = Node::default();
+    key_values.into_iter().for_each(|(key, value)| {
+        let mut node = key.into_iter().fold(&mut root, |node, &c| {
+            node.branch.entry(c).or_insert_with(Node::default)
+        });
+
+        node.leaf = Some(value);
+    });
+
+    println!("{root:?}");
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     macro_rules! test {
         ($name:ident, $($test:tt)+) => {
             #[test]
@@ -41,10 +54,5 @@ mod tests {
         };
     }
 
-    test!(byte_tilde, rot13_u8(b'~') == b'~');
-    test!(byte_lower_a, rot13_u8(b'a') == b'a' + 13);
-    test!(byte_upper_a, rot13_u8(b'A') == b'A' + 13);
-    test!(byte_lower_z, rot13_u8(b'z') == b'a' + 12);
-    test!(byte_upper_z, rot13_u8(b'Z') == b'A' + 12);
-    test!(str_abc, rot13(".abc NOP") == ".nop ABC");
+    test!(byte_tilde, b'~' == b'~');
 }
