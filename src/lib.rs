@@ -6,6 +6,33 @@ pub struct Node<V> {
     pub branch: HashMap<u8, Node<V>>,
 }
 
+impl<V> Node<V>
+where
+    V: fmt::Debug,
+{
+    #[inline]
+    pub fn render(&self) {
+        self.render_child(0, None)
+    }
+    pub fn render_child(&self, level: usize, fallback: Option<&V>) {
+        if self.branch.is_empty() {
+            // Terminal. Could be None or Some(_).
+            print!("{:?}", self.leaf);
+        } else {
+            let indent = "    ".repeat(level);
+            println!("match iter.next() {{");
+            self.branch.iter().for_each(|(chunk, child)| {
+                print!("{indent}    {chunk:?} => ");
+                child.render_child(level + 1, self.leaf.as_ref().or(fallback));
+                println!(",");
+            });
+            // FIXME: what happens if all possibilities are exhausted?
+            println!("{indent}    _ => {:?},", self.leaf.as_ref().or(fallback));
+            print!("{indent}}}");
+        }
+    }
+}
+
 impl<V> Default for Node<V> {
     fn default() -> Self {
         Self {
@@ -25,11 +52,10 @@ impl<V: fmt::Debug> fmt::Debug for Node<V> {
 }
 
 /// Generate matcher
-pub fn generate<'a, K, V, I>(key_values: I)
+pub fn generate<'a, K, V, I>(key_values: I) -> Node<V>
 where
     K: IntoIterator<Item = &'a u8>,
     I: IntoIterator<Item = (K, V)>,
-    V: fmt::Debug,
 {
     let mut root = Node::default();
     key_values.into_iter().for_each(|(key, value)| {
@@ -39,29 +65,7 @@ where
 
         node.leaf = Some(value);
     });
-
-    render(&root, 0, None);
-}
-
-pub fn render<V>(node: &Node<V>, level: usize, fallback: Option<&V>)
-where
-    V: fmt::Debug,
-{
-    if node.branch.is_empty() {
-        // Terminal. Could be None or Some(_).
-        print!("{:?}", node.leaf);
-    } else {
-        let indent = "    ".repeat(level);
-        println!("match iter.next() {{");
-        node.branch.iter().for_each(|(chunk, child)| {
-            print!("{indent}    {chunk:?} => ");
-            render(child, level + 1, node.leaf.as_ref().or(fallback));
-            println!(",");
-        });
-        // FIXME: what happens if all possibilities are exhausted?
-        println!("{indent}    _ => {:?},", node.leaf.as_ref().or(fallback));
-        print!("{indent}}}");
-    }
+    root
 }
 
 #[cfg(test)]
