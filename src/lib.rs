@@ -26,7 +26,8 @@ where
                 child.render_child(level + 1, self.leaf.as_ref().or(fallback));
                 println!(",");
             });
-            // FIXME: what happens if all possibilities are exhausted?
+            // FIXME: if all possible branches are used, this will trigger
+            // #[warn(unreachable_patterns)].
             println!("{indent}    _ => {:?},", self.leaf.as_ref().or(fallback));
             print!("{indent}}}");
         }
