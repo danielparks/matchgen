@@ -27,6 +27,6 @@ fn cli(params: Params) -> anyhow::Result<()> {
         )
     }));
 
-    node.render(&mut io::stdout()).unwrap();
+    node.render(&mut io::stdout(), "pub fn match", "&'static str")?;
     Ok(())
 }

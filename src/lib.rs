@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use std::io;
 
+/// A node in the simple finite-state automaton that is a matcher.
+///
+/// See [`generate()`] and [`Node::render()`].
 #[derive(Debug, Default)]
 pub struct Node {
     pub leaf: Option<String>,
@@ -8,12 +11,58 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn render<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
-        let indent = "    ";
+    /// Render the matcher into Rust code.
+    ///
+    /// The parameters are:
+    ///
+    ///   1. An instance of [`std::io::Write`], like [`std::io::stdout()`], a
+    ///      file, or a [`Vec`].
+    ///   2. The first part of the function definition to generate, e.g.
+    ///      `"pub fn matcher"`.
+    ///   3. The return type (will be wrapped in [`Option`]), e.g.
+    ///      `"&'static str"`.
+    ///
+    /// ### Example
+    ///
+    /// ```rust
+    /// use iter_matcher::generate;
+    /// let mut out = Vec::new();
+    ///
+    /// generate([("a".bytes(), "1".to_string())])
+    ///     .render(&mut out, "fn match", "u64")
+    ///     .unwrap();
+    ///
+    /// assert_eq!(
+    ///     String::from_utf8(out).unwrap(),
+    ///     "\
+    /// #[allow(unreachable_patterns)]
+    /// fn match<I>(iter: &mut I) -> Option<u64>
+    /// where
+    ///     I: core::iter::Iterator<Item = u8> + core::clone::Clone,
+    /// {
+    ///     let fallback_iter = iter.clone();
+    ///     match iter.next() {
+    ///         97 => Some(1),
+    ///         _ => {
+    ///             *iter = fallback_iter;
+    ///             None
+    ///         }
+    ///     }
+    /// }");
+    /// ```
+    pub fn render<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
+        &self,
+        writer: &mut W,
+        fn_name: N,
+        return_type: R,
+    ) -> io::Result<()> {
+        let indent = "    "; // Our formatting prevents embedding this.
+        let fn_name = fn_name.as_ref();
+        let return_type = return_type.as_ref();
         write!(
             writer,
             "#[allow(unreachable_patterns)]\n\
-            fn match<I>(iter: &mut I) -> Option<&'static str>\n\
+            {fn_name}<I>(iter: &mut I) -> Option<{return_type}>\n\
             where\n\
             {indent}I: core::iter::Iterator<Item = u8> + core::clone::Clone,\n"
         )?;
@@ -106,7 +155,18 @@ impl Node {
     }
 }
 
-/// Generate matcher
+/// Generate a matcher.
+///
+/// This takes an iterator of tuple pairs `(K, V)`. `K` must be an iterator
+/// that generates bytes, e.g. `"key".bytes()`, and `V` must be a [`String`].
+///
+/// Call [`Node::render()`] on the result to actually generate the code.
+///
+/// ```rust
+/// use iter_matcher::generate;
+/// let node = generate([("a".bytes(), "1".to_string())]);
+/// ```
+
 pub fn generate<K, I>(key_values: I) -> Node
 where
     K: IntoIterator<Item = u8>,
@@ -121,18 +181,4 @@ where
         node.leaf = Some(value);
     });
     root
-}
-
-#[cfg(test)]
-mod tests {
-    macro_rules! test {
-        ($name:ident, $($test:tt)+) => {
-            #[test]
-            fn $name() {
-                ::assert2::assert!($($test)+);
-            }
-        };
-    }
-
-    test!(byte_tilde, b'~' == b'~');
 }

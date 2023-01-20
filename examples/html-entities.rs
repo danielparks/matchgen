@@ -19,9 +19,11 @@ fn main() {
 }
 
 fn cli(params: Params) -> anyhow::Result<()> {
-    generate(load_entities(&params.entities))
-        .render(&mut io::stdout())
-        .unwrap();
+    generate(load_entities(&params.entities)).render(
+        &mut io::stdout(),
+        "fn match",
+        "&'static str",
+    )?;
     Ok(())
 }
 
