@@ -23,7 +23,7 @@ fn cli(params: Params) -> anyhow::Result<()> {
         let key_value: Vec<&str> = key_value.splitn(2, '=').collect();
         (
             key_value[0].clone().as_bytes().to_vec(),
-            key_value[1].clone(),
+            format!("{:?}", key_value[1]),
         )
     }));
 

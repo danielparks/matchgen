@@ -1,16 +1,13 @@
 use std::collections::HashMap;
-use std::fmt;
 use std::io;
 
-pub struct Node<V> {
-    pub leaf: Option<V>,
-    pub branch: HashMap<u8, Node<V>>,
+#[derive(Debug, Default)]
+pub struct Node {
+    pub leaf: Option<String>,
+    pub branch: HashMap<u8, Node>,
 }
 
-impl<V> Node<V>
-where
-    V: fmt::Debug,
-{
+impl Node {
     pub fn render<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         let indent = "    ";
         write!(
@@ -26,15 +23,19 @@ where
         // stack. Transform this to an iterative algorithm.
 
         #[inline]
-        pub fn render_child<V: fmt::Debug, W: io::Write>(
-            node: &Node<V>,
+        pub fn render_child<W: io::Write>(
+            node: &Node,
             writer: &mut W,
             level: usize,
-            fallback: Option<&V>,
+            fallback: Option<&String>,
         ) -> io::Result<()> {
             if node.branch.is_empty() {
                 // Terminal. node.leaf should be Some(_), but might not be.
-                write!(writer, "{:?}", node.leaf.as_ref().or(fallback))?;
+                write!(
+                    writer,
+                    "{}",
+                    leaf_to_str(node.leaf.as_ref().or(fallback))
+                )?;
             } else if node.leaf.is_none() && level > 0 {
                 // No patterns end here: branch only. (There is an implicit
                 // default root pattern of [] => None so that we rewind the iter
@@ -50,22 +51,18 @@ where
                     {indent}    "
                 )?;
                 render_match(node, writer, level + 1, node.leaf.as_ref())?;
-                write!(
-                    writer,
-                    "\n\
-                    {indent}}}"
-                )?;
+                write!(writer, "\n{indent}}}")?;
             }
 
             Ok(())
         }
 
         #[inline]
-        fn render_match<V: fmt::Debug, W: io::Write>(
-            node: &Node<V>,
+        fn render_match<W: io::Write>(
+            node: &Node,
             writer: &mut W,
             level: usize,
-            fallback: Option<&V>,
+            fallback: Option<&String>,
         ) -> io::Result<()> {
             let indent = "    ".repeat(level);
             writeln!(writer, "match iter.next() {{")?;
@@ -83,11 +80,12 @@ where
 
             // FIXME? we could leave this off if all possible branches are used,
             // which would allow us to reenable #[warn(unreachable_patterns)].
+            let fallback = leaf_to_str(fallback);
             write!(
                 writer,
                 "{indent}    _ => {{\n\
                 {indent}        *iter = fallback_iter;\n\
-                {indent}        {fallback:?}\n\
+                {indent}        {fallback}\n\
                 {indent}    }}\n\
                 {indent}}}"
             )?;
@@ -95,33 +93,24 @@ where
             Ok(())
         }
 
+        #[inline]
+        fn leaf_to_str(leaf: Option<&String>) -> String {
+            if let Some(leaf) = leaf {
+                format!("Some({})", leaf)
+            } else {
+                "None".to_string()
+            }
+        }
+
         Ok(())
     }
 }
 
-impl<V> Default for Node<V> {
-    fn default() -> Self {
-        Self {
-            leaf: None,
-            branch: HashMap::new(),
-        }
-    }
-}
-
-impl<V: fmt::Debug> fmt::Debug for Node<V> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Node")
-            .field("leaf", &self.leaf)
-            .field("branch", &self.branch)
-            .finish()
-    }
-}
-
 /// Generate matcher
-pub fn generate<K, V, I>(key_values: I) -> Node<V>
+pub fn generate<K, I>(key_values: I) -> Node
 where
     K: IntoIterator<Item = u8>,
-    I: IntoIterator<Item = (K, V)>,
+    I: IntoIterator<Item = (K, String)>,
 {
     let mut root = Node::default();
     key_values.into_iter().for_each(|(key, value)| {
