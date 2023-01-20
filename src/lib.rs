@@ -12,12 +12,13 @@ where
     V: fmt::Debug,
 {
     pub fn render<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
-        writeln!(writer, "#[allow(unreachable_patterns)]")?;
-        writeln!(writer, "fn match<I>(iter: &mut I) -> Option<&'static str>")?;
-        writeln!(writer, "where")?;
-        writeln!(
+        let indent = "    ";
+        write!(
             writer,
-            "    I: core::iter::Iterator<Item = u8> + core::clone::Clone,"
+            "#[allow(unreachable_patterns)]\n\
+            fn match<I>(iter: &mut I) -> Option<&'static str>\n\
+            where\n\
+            {indent}I: core::iter::Iterator<Item = u8> + core::clone::Clone,\n"
         )?;
         render_child(self, writer, 0, None)?;
 
@@ -42,15 +43,18 @@ where
             } else {
                 // A pattern ends here.
                 let indent = "    ".repeat(level);
-                writeln!(writer, "{{")?;
-                writeln!(
+                write!(
                     writer,
-                    "{indent}    let fallback_iter = iter.clone();"
+                    "{{\n\
+                    {indent}    let fallback_iter = iter.clone();\n\
+                    {indent}    "
                 )?;
-                write!(writer, "{indent}    ")?;
                 render_match(node, writer, level + 1, node.leaf.as_ref())?;
-                writeln!(writer)?;
-                write!(writer, "{indent}}}")?;
+                write!(
+                    writer,
+                    "\n\
+                    {indent}}}"
+                )?;
             }
 
             Ok(())
@@ -79,11 +83,14 @@ where
 
             // FIXME? we could leave this off if all possible branches are used,
             // which would allow us to reenable #[warn(unreachable_patterns)].
-            writeln!(writer, "{indent}    _ => {{")?;
-            writeln!(writer, "{indent}        *iter = fallback_iter;")?;
-            writeln!(writer, "{indent}        {:?}", fallback)?;
-            writeln!(writer, "{indent}    }}")?;
-            write!(writer, "{indent}}}")?;
+            write!(
+                writer,
+                "{indent}    _ => {{\n\
+                {indent}        *iter = fallback_iter;\n\
+                {indent}        {fallback:?}\n\
+                {indent}    }}\n\
+                {indent}}}"
+            )?;
 
             Ok(())
         }
