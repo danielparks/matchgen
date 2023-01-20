@@ -36,7 +36,7 @@ fn load_entities(path: &Path) -> Vec<(Vec<u8>, String)> {
         .iter()
         .map(|(name, info)| {
             (
-                name.as_bytes().to_vec(),
+                name.bytes().collect(),
                 format!("{:?}", info["characters"].as_str().unwrap()),
             )
         })

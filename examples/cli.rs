@@ -21,10 +21,7 @@ fn main() {
 fn cli(params: Params) -> anyhow::Result<()> {
     let node = generate(params.key_values.iter().map(|key_value| {
         let key_value: Vec<&str> = key_value.splitn(2, '=').collect();
-        (
-            key_value[0].clone().as_bytes().to_vec(),
-            format!("{:?}", key_value[1]),
-        )
+        (key_value[0].bytes(), format!("{:?}", key_value[1]))
     }));
 
     node.render(&mut io::stdout(), "pub fn match", "&'static str")?;
