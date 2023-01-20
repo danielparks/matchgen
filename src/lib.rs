@@ -49,14 +49,20 @@ where
             node.branch.iter().for_each(|(chunk, child)| {
                 print!("{indent}    {chunk:?} => ");
                 render_child(child, level + 1, fallback);
-                println!(",");
+                if child.branch.is_empty() {
+                    // render_child() outputs a value, not a match block.
+                    println!(",");
+                } else {
+                    // ender_child() outputs a match block.
+                    println!();
+                }
             });
             // FIXME: if all possible branches are used, this will trigger
             // #[warn(unreachable_patterns)].
             if fallback.is_some() {
                 println!("{indent}    _ => {{");
                 println!("{indent}        *iter = fallback_iter;");
-                println!("{indent}        {:?},", fallback);
+                println!("{indent}        {:?}", fallback);
                 println!("{indent}    }}");
             } else {
                 println!("{indent}    _ => None,");
