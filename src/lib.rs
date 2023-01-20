@@ -28,7 +28,7 @@ impl Node {
     /// use iter_matcher::generate;
     /// let mut out = Vec::new();
     ///
-    /// generate([("a".bytes(), "1".to_string())])
+    /// generate([("a".bytes(), "1")])
     ///     .render(&mut out, "fn match", "u64")
     ///     .unwrap();
     ///
@@ -164,13 +164,13 @@ impl Node {
 ///
 /// ```rust
 /// use iter_matcher::generate;
-/// let node = generate([("a".bytes(), "1".to_string())]);
+/// let node = generate([("a".bytes(), "1")]);
 /// ```
-
-pub fn generate<K, I>(key_values: I) -> Node
+pub fn generate<I, K, V>(key_values: I) -> Node
 where
+    I: IntoIterator<Item = (K, V)>,
     K: IntoIterator<Item = u8>,
-    I: IntoIterator<Item = (K, String)>,
+    V: Into<String>,
 {
     let mut root = Node::default();
     key_values.into_iter().for_each(|(key, value)| {
@@ -178,7 +178,7 @@ where
             node.branch.entry(c).or_insert_with(Node::default)
         });
 
-        node.leaf = Some(value);
+        node.leaf = Some(value.into());
     });
     root
 }
