@@ -11,7 +11,10 @@ where
     V: fmt::Debug,
 {
     pub fn render(&self) {
-        // FIXME add constraints on iter somehow? Needs Clone and mut?
+        println!("#[allow(unreachable_patterns)]");
+        println!("fn match<I>(iter: &mut I) -> Option<&'static str>");
+        println!("where");
+        println!("    I: core::iter::Iterator<Item = u8> + core::clone::Clone,");
         render_child(self, 0, None);
 
         #[inline]
@@ -59,8 +62,8 @@ where
                     println!();
                 }
             });
-            // FIXME: if all possible branches are used, this will trigger
-            // #[warn(unreachable_patterns)].
+            // FIXME? we could leave this off if all possible branches are used,
+            // which would allow us to reenable #[warn(unreachable_patterns)].
             println!("{indent}    _ => {{");
             println!("{indent}        *iter = fallback_iter;");
             println!("{indent}        {:?}", fallback);
