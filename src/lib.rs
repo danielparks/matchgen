@@ -10,23 +10,45 @@ impl<V> Node<V>
 where
     V: fmt::Debug,
 {
-    #[inline]
     pub fn render(&self) {
         // FIXME add constraints on iter somehow? Needs Clone and mut?
-        self.render_child(0, None)
-    }
+        render_child(self, 0, None);
 
-    pub fn render_child(&self, level: usize, fallback: Option<&V>) {
-        if self.branch.is_empty() {
-            // Terminal. self.leaf should be Some(_), but might not be.
-            print!("{:?}", self.leaf.as_ref().or(fallback));
-        } else if self.leaf.is_none() {
-            // No patterns end here: branch only.
+        #[inline]
+        pub fn render_child<V: std::fmt::Debug>(
+            node: &Node<V>,
+            level: usize,
+            fallback: Option<&V>,
+        ) {
+            if node.branch.is_empty() {
+                // Terminal. node.leaf should be Some(_), but might not be.
+                print!("{:?}", node.leaf.as_ref().or(fallback));
+            } else if node.leaf.is_none() {
+                // No patterns end here: branch only.
+                render_match(node, level, fallback);
+            } else {
+                // A pattern ends here.
+                let indent = "    ".repeat(level);
+                println!("{{");
+                println!("{indent}    let fallback_iter = iter.clone();");
+                print!("{indent}    ");
+                render_match(node, level + 1, node.leaf.as_ref());
+                println!();
+                print!("{indent}}}");
+            }
+        }
+
+        #[inline]
+        fn render_match<V: std::fmt::Debug>(
+            node: &Node<V>,
+            level: usize,
+            fallback: Option<&V>,
+        ) {
             let indent = "    ".repeat(level);
             println!("match iter.next() {{");
-            self.branch.iter().for_each(|(chunk, child)| {
+            node.branch.iter().for_each(|(chunk, child)| {
                 print!("{indent}    {chunk:?} => ");
-                child.render_child(level + 1, fallback);
+                render_child(child, level + 1, fallback);
                 println!(",");
             });
             // FIXME: if all possible branches are used, this will trigger
@@ -39,25 +61,6 @@ where
             } else {
                 println!("{indent}    _ => None,");
             }
-            print!("{indent}}}");
-        } else {
-            // A pattern ends here.
-            let indent = "    ".repeat(level);
-            println!("{{");
-            println!("{indent}    let fallback_iter = iter.clone();");
-            println!("{indent}    match iter.next() {{");
-            self.branch.iter().for_each(|(chunk, child)| {
-                print!("{indent}        {chunk:?} => ");
-                child.render_child(level + 2, self.leaf.as_ref());
-                println!(",");
-            });
-            // FIXME: if all possible branches are used, this will trigger
-            // #[warn(unreachable_patterns)].
-            println!("{indent}        _ => {{");
-            println!("{indent}            *iter = fallback_iter;");
-            println!("{indent}            {:?}", self.leaf);
-            println!("{indent}        }}");
-            println!("{indent}    }}");
             print!("{indent}}}");
         }
     }
