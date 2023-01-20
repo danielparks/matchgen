@@ -1,4 +1,4 @@
-# iter-matcher
+# iter-matcher — very experimental
 
 [![docs.rs](https://img.shields.io/docsrs/iter-matcher)][docs.rs]
 [![Crates.io](https://img.shields.io/crates/v/iter-matcher)][crates.io]
