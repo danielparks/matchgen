@@ -23,8 +23,10 @@ where
             if node.branch.is_empty() {
                 // Terminal. node.leaf should be Some(_), but might not be.
                 print!("{:?}", node.leaf.as_ref().or(fallback));
-            } else if node.leaf.is_none() {
-                // No patterns end here: branch only.
+            } else if node.leaf.is_none() && level > 0 {
+                // No patterns end here: branch only. (There is an implicit
+                // default root pattern of [] => None so that we rewind the iter
+                // when it matches.)
                 render_match(node, level, fallback);
             } else {
                 // A pattern ends here.
@@ -59,14 +61,10 @@ where
             });
             // FIXME: if all possible branches are used, this will trigger
             // #[warn(unreachable_patterns)].
-            if fallback.is_some() {
-                println!("{indent}    _ => {{");
-                println!("{indent}        *iter = fallback_iter;");
-                println!("{indent}        {:?}", fallback);
-                println!("{indent}    }}");
-            } else {
-                println!("{indent}    _ => None,");
-            }
+            println!("{indent}    _ => {{");
+            println!("{indent}        *iter = fallback_iter;");
+            println!("{indent}        {:?}", fallback);
+            println!("{indent}    }}");
             print!("{indent}}}");
         }
     }
