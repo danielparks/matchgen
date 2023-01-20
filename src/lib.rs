@@ -6,7 +6,18 @@ use std::io;
 /// See [`generate()`] and [`Node::render()`].
 #[derive(Debug, Default)]
 pub struct Node {
+    /// If the matcher gets to this node and `leaf` is `Some(_)`, then we found
+    /// a (potential) match.
+    ///
+    /// If `branch` is not empty, then we still need to check further on to see
+    /// if there’s a longer match.
     pub leaf: Option<String>,
+
+    /// The list of characters that could be matched next, and the nodes they
+    /// represent.
+    ///
+    /// If none of these characters match, then return `leaf` as the match
+    /// (it might be None, indicating that nothing matches).
     pub branch: HashMap<u8, Node>,
 }
 
@@ -33,8 +44,8 @@ impl Node {
     ///     .unwrap();
     ///
     /// assert_eq!(
-    ///     String::from_utf8(out).unwrap(),
-    ///     "\
+    ///     out,
+    ///     b"\
     /// #[allow(unreachable_patterns)]
     /// fn match<I>(iter: &mut I) -> Option<u64>
     /// where
