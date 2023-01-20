@@ -91,14 +91,14 @@ impl<V: fmt::Debug> fmt::Debug for Node<V> {
 }
 
 /// Generate matcher
-pub fn generate<'a, K, V, I>(key_values: I) -> Node<V>
+pub fn generate<K, V, I>(key_values: I) -> Node<V>
 where
-    K: IntoIterator<Item = &'a u8>,
+    K: IntoIterator<Item = u8>,
     I: IntoIterator<Item = (K, V)>,
 {
     let mut root = Node::default();
     key_values.into_iter().for_each(|(key, value)| {
-        let mut node = key.into_iter().fold(&mut root, |node, &c| {
+        let mut node = key.into_iter().fold(&mut root, |node, c| {
             node.branch.entry(c).or_insert_with(Node::default)
         });
 

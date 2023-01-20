@@ -20,7 +20,7 @@ fn main() {
 fn cli(params: Params) -> anyhow::Result<()> {
     let node = generate(params.key_values.iter().map(|key_value| {
         let key_value: Vec<&str> = key_value.splitn(2, '=').collect();
-        (key_value[0].clone().as_bytes(), key_value[1].clone())
+        (key_value[0].clone().as_bytes().to_vec(), key_value[1].clone())
     }));
 
     node.render();

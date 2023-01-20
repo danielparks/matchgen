@@ -18,3 +18,4 @@ edition = "2021"
 anyhow = "1.0.68"
 assert2 = "0.3.7"
 clap = { version = "4.1.1", features = ["derive"] }
+serde_json = "1.0.91"
