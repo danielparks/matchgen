@@ -1,5 +1,6 @@
 use clap::Parser;
 use iter_matcher::generate;
+use std::io;
 use std::process::exit;
 
 #[derive(Debug, clap::Parser)]
@@ -26,6 +27,6 @@ fn cli(params: Params) -> anyhow::Result<()> {
         )
     }));
 
-    node.render();
+    node.render(&mut io::stdout()).unwrap();
     Ok(())
 }

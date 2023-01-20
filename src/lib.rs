@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fmt;
+use std::io;
 
 pub struct Node<V> {
     pub leaf: Option<V>,
@@ -10,66 +11,84 @@ impl<V> Node<V>
 where
     V: fmt::Debug,
 {
-    pub fn render(&self) {
-        println!("#[allow(unreachable_patterns)]");
-        println!("fn match<I>(iter: &mut I) -> Option<&'static str>");
-        println!("where");
-        println!("    I: core::iter::Iterator<Item = u8> + core::clone::Clone,");
-        render_child(self, 0, None);
+    pub fn render<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+        writeln!(writer, "#[allow(unreachable_patterns)]")?;
+        writeln!(writer, "fn match<I>(iter: &mut I) -> Option<&'static str>")?;
+        writeln!(writer, "where")?;
+        writeln!(
+            writer,
+            "    I: core::iter::Iterator<Item = u8> + core::clone::Clone,"
+        )?;
+        render_child(self, writer, 0, None)?;
+
+        // FIXME: this is recursive, so for long patterns it could blow out the
+        // stack. Transform this to an iterative algorithm.
 
         #[inline]
-        pub fn render_child<V: std::fmt::Debug>(
+        pub fn render_child<V: fmt::Debug, W: io::Write>(
             node: &Node<V>,
+            writer: &mut W,
             level: usize,
             fallback: Option<&V>,
-        ) {
+        ) -> io::Result<()> {
             if node.branch.is_empty() {
                 // Terminal. node.leaf should be Some(_), but might not be.
-                print!("{:?}", node.leaf.as_ref().or(fallback));
+                write!(writer, "{:?}", node.leaf.as_ref().or(fallback))?;
             } else if node.leaf.is_none() && level > 0 {
                 // No patterns end here: branch only. (There is an implicit
                 // default root pattern of [] => None so that we rewind the iter
                 // when it matches.)
-                render_match(node, level, fallback);
+                render_match(node, writer, level, fallback)?;
             } else {
                 // A pattern ends here.
                 let indent = "    ".repeat(level);
-                println!("{{");
-                println!("{indent}    let fallback_iter = iter.clone();");
-                print!("{indent}    ");
-                render_match(node, level + 1, node.leaf.as_ref());
-                println!();
-                print!("{indent}}}");
+                writeln!(writer, "{{")?;
+                writeln!(
+                    writer,
+                    "{indent}    let fallback_iter = iter.clone();"
+                )?;
+                write!(writer, "{indent}    ")?;
+                render_match(node, writer, level + 1, node.leaf.as_ref())?;
+                writeln!(writer)?;
+                write!(writer, "{indent}}}")?;
             }
+
+            Ok(())
         }
 
         #[inline]
-        fn render_match<V: std::fmt::Debug>(
+        fn render_match<V: fmt::Debug, W: io::Write>(
             node: &Node<V>,
+            writer: &mut W,
             level: usize,
             fallback: Option<&V>,
-        ) {
+        ) -> io::Result<()> {
             let indent = "    ".repeat(level);
-            println!("match iter.next() {{");
-            node.branch.iter().for_each(|(chunk, child)| {
-                print!("{indent}    {chunk:?} => ");
-                render_child(child, level + 1, fallback);
+            writeln!(writer, "match iter.next() {{")?;
+            for (chunk, child) in &node.branch {
+                write!(writer, "{indent}    {chunk:?} => ")?;
+                render_child(child, writer, level + 1, fallback)?;
                 if child.branch.is_empty() {
                     // render_child() outputs a value, not a match block.
-                    println!(",");
+                    writeln!(writer, ",")?;
                 } else {
                     // ender_child() outputs a match block.
-                    println!();
+                    writeln!(writer)?;
                 }
-            });
+            }
+
             // FIXME? we could leave this off if all possible branches are used,
             // which would allow us to reenable #[warn(unreachable_patterns)].
-            println!("{indent}    _ => {{");
-            println!("{indent}        *iter = fallback_iter;");
-            println!("{indent}        {:?}", fallback);
-            println!("{indent}    }}");
-            print!("{indent}}}");
+            writeln!(writer, "{indent}    _ => {{")?;
+            writeln!(writer, "{indent}        *iter = fallback_iter;")?;
+            writeln!(writer, "{indent}        {:?}", fallback)?;
+            writeln!(writer, "{indent}    }}")?;
+            write!(writer, "{indent}}}")?;
+
+            Ok(())
         }
+
+        Ok(())
     }
 }
 

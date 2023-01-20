@@ -1,6 +1,7 @@
 use clap::Parser;
 use iter_matcher::generate;
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process::exit;
 
@@ -18,7 +19,9 @@ fn main() {
 }
 
 fn cli(params: Params) -> anyhow::Result<()> {
-    generate(load_entities(&params.entities)).render();
+    generate(load_entities(&params.entities))
+        .render(&mut io::stdout())
+        .unwrap();
     Ok(())
 }
 
