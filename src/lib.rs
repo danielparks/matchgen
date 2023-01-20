@@ -46,9 +46,9 @@ impl Node {
     /// assert_eq!(
     ///     out,
     ///     b"\
-    /// fn match<I>(iter: &mut I) -> Option<u64>
+    /// fn match<'a, I>(iter: &mut I) -> Option<u64>
     /// where
-    ///     I: core::iter::Iterator<Item = u8> + core::clone::Clone,
+    ///     I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,
     /// {
     ///     let fallback_iter = iter.clone();
     ///     match iter.next() {
@@ -72,9 +72,9 @@ impl Node {
         let return_type = return_type.as_ref();
         write!(
             writer,
-            "{fn_name}<I>(iter: &mut I) -> Option<{return_type}>\n\
+            "{fn_name}<'a, I>(iter: &mut I) -> Option<{return_type}>\n\
             where\n\
-            {indent}I: core::iter::Iterator<Item = u8> + core::clone::Clone,\n"
+            {indent}I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,\n"
         )?;
         render_child(self, writer, 0, None)?;
         writeln!(writer)?;
