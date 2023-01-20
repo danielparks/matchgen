@@ -46,20 +46,20 @@ impl Node {
     /// assert_eq!(
     ///     out,
     ///     b"\
-    /// #[allow(unreachable_patterns)]
     /// fn match<I>(iter: &mut I) -> Option<u64>
     /// where
     ///     I: core::iter::Iterator<Item = u8> + core::clone::Clone,
     /// {
     ///     let fallback_iter = iter.clone();
     ///     match iter.next() {
-    ///         97 => Some(1),
+    ///         Some(97) => Some(1),
     ///         _ => {
     ///             *iter = fallback_iter;
     ///             None
     ///         }
     ///     }
-    /// }");
+    /// }
+    /// ");
     /// ```
     pub fn render<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
         &self,
@@ -72,12 +72,12 @@ impl Node {
         let return_type = return_type.as_ref();
         write!(
             writer,
-            "#[allow(unreachable_patterns)]\n\
-            {fn_name}<I>(iter: &mut I) -> Option<{return_type}>\n\
+            "{fn_name}<I>(iter: &mut I) -> Option<{return_type}>\n\
             where\n\
             {indent}I: core::iter::Iterator<Item = u8> + core::clone::Clone,\n"
         )?;
         render_child(self, writer, 0, None)?;
+        writeln!(writer)?;
 
         // FIXME: this is recursive, so for long patterns it could blow out the
         // stack. Transform this to an iterative algorithm.
@@ -127,7 +127,7 @@ impl Node {
             let indent = "    ".repeat(level);
             writeln!(writer, "match iter.next() {{")?;
             for (chunk, child) in &node.branch {
-                write!(writer, "{indent}    {chunk:?} => ")?;
+                write!(writer, "{indent}    Some({chunk:?}) => ")?;
                 render_child(child, writer, level + 1, fallback)?;
                 if child.branch.is_empty() {
                     // render_child() outputs a value, not a match block.
@@ -138,8 +138,6 @@ impl Node {
                 }
             }
 
-            // FIXME? we could leave this off if all possible branches are used,
-            // which would allow us to reenable #[warn(unreachable_patterns)].
             let fallback = leaf_to_str(fallback);
             write!(
                 writer,
