@@ -14,11 +14,11 @@
 //!     let mut out = BufWriter::new(File::create(out_path)?);
 //!
 //!     writeln!(out, "/// My fancy matcher.")?;
-//!     iter_matcher::Node::default()
-//!         .add(b"one", r#"b"1""#)
-//!         .add(b"two", r#"b"2""#)
-//!         .add(b"three", r#"b"3""#)
-//!         .render(&mut out, "pub fn fancy_matcher", "&'static [u8]")?;
+//!     let mut node = iter_matcher::Node::default();
+//!     node.add(b"one", r#"b"1""#);
+//!     node.add(b"two", r#"b"2""#);
+//!     node.add(b"three", r#"b"3""#);
+//!     node.render(&mut out, "pub fn fancy_matcher", "&'static [u8]")?;
 //!
 //!     Ok(())
 //! }
@@ -58,7 +58,7 @@ impl Node {
     /// let mut node = iter_matcher::Node::default();
     /// node.add(b"a", "1");
     /// ```
-    pub fn add<'a, K, V>(&mut self, key: K, value: V) -> &mut Self
+    pub fn add<'a, K, V>(&mut self, key: K, value: V)
     where
         K: IntoIterator<Item = &'a u8>,
         V: Into<String>,
@@ -68,7 +68,6 @@ impl Node {
         });
 
         node.leaf = Some(value.into());
-        node
     }
 
     /// Render the matcher into Rust code.
