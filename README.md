@@ -4,6 +4,15 @@
 [![Crates.io](https://img.shields.io/crates/v/matchgen)][crates.io]
 ![Rust version 1.60+](https://img.shields.io/badge/Rust%20version-1.60%2B-success)
 
+Maintaining this branch while the [slow-clippy branch] on [htmlize] is open. For
+[rust-clippy #10220].
+
+[slow-clippy branch]: https://github.com/danielparks/htmlize/compare/main...slow-clippy
+[htmlize]: https://github.com/danielparks/htmlize
+[rust-clippy #10220]: https://github.com/rust-lang/rust-clippy/issues/10220
+
+---
+
 [`TreeMatcher`] can be used from a [build script] to generate a matcher
 function that maps byte sequences to arbitrary values. It returns the mapped
 value (or `None`) and the remainder of the input.
