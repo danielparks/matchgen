@@ -17,7 +17,7 @@ want to run `iterator.next()` if you’re running in a loop.
 
 Note also that this does not search for the beginning of a match; it only checks
 the start of the iterator. Often you will want to use [`position()`] or
-the [memchr crate] to find the start of a potential match.
+the [memchr crate][memchr] to find the start of a potential match.
 
 This is useful for things like [decoding HTML entities][htmlize]. To create a
 matcher to handle the four basic HTML entities:
