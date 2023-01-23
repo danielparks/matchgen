@@ -1,9 +1,35 @@
+//! ### Example build script
+//!
+//! ```rust
+//! use std::env;
+//! use std::error::Error;
+//! use std::fs::File;
+//! use std::io::{BufWriter, Read, Write};
+//! use std::path::Path;
+//!
+//! fn main() -> Result<(), Box<dyn Error>> {
+//!     # let tmp_dir = temp_dir::TempDir::new().unwrap();
+//!     # env::set_var("OUT_DIR", tmp_dir.path());
+//!     let out_path = Path::new(&env::var("OUT_DIR")?).join("matcher.rs");
+//!     let mut out = BufWriter::new(File::create(out_path)?);
+//!
+//!     writeln!(out, "/// My fancy matcher.")?;
+//!     iter_matcher::Node::default()
+//!         .add(b"one", r#"b"1""#)
+//!         .add(b"two", r#"b"2""#)
+//!         .add(b"three", r#"b"3""#)
+//!         .render(&mut out, "pub fn fancy_matcher", "&'static [u8]")?;
+//!
+//!     Ok(())
+//! }
+//! ```
+
 use std::collections::HashMap;
 use std::io;
 
 /// A node in the simple finite-state automaton that is a matcher.
 ///
-/// See [`generate()`] and [`Node::render()`].
+/// See [`Node::from_iter()`] and [`Node::render()`].
 #[derive(Debug, Default)]
 pub struct Node {
     /// If the matcher gets to this node and `leaf` is `Some(_)`, then we found
@@ -22,6 +48,25 @@ pub struct Node {
 }
 
 impl Node {
+    /// Add a match rooted in this node.
+    ///
+    /// ```rust
+    /// let mut node = iter_matcher::Node::default();
+    /// node.add(b"a", "1");
+    /// ```
+    pub fn add<'a, K, V>(&mut self, key: K, value: V) -> &mut Self
+    where
+        K: IntoIterator<Item = &'a u8>,
+        V: Into<String>,
+    {
+        let mut node = key.into_iter().fold(self, |node, &c| {
+            node.branch.entry(c).or_insert_with(Node::default)
+        });
+
+        node.leaf = Some(value.into());
+        node
+    }
+
     /// Render the matcher into Rust code.
     ///
     /// The parameters are:
@@ -36,17 +81,17 @@ impl Node {
     /// ### Example
     ///
     /// ```rust
-    /// use iter_matcher::generate;
+    /// use iter_matcher::Node;
     /// let mut out = Vec::new();
     ///
-    /// generate([("a".bytes(), "1")])
-    ///     .render(&mut out, "fn match", "u64")
+    /// Node::from_iter([("a".as_bytes(), "1")])
+    ///     .render(&mut out, "fn match_bytes", "u64")
     ///     .unwrap();
     ///
     /// assert_eq!(
     ///     out,
     ///     b"\
-    /// fn match<'a, I>(iter: &mut I) -> Option<u64>
+    /// fn match_bytes<'a, I>(iter: &mut I) -> Option<u64>
     /// where
     ///     I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,
     /// {
@@ -97,9 +142,10 @@ impl Node {
                     leaf_to_str(node.leaf.as_ref().or(fallback))
                 )?;
             } else if node.leaf.is_none() && level > 0 {
-                // No patterns end here: branch only. (There is an implicit
-                // default root pattern of [] => None so that we rewind the iter
-                // when it matches.)
+                // No patterns end here: branch only. (The level check creates
+                // a default root pattern of `[] => None` so that we rewind the
+                // iter when nothing matches.)
+                // FIXME: make this configurable.
                 render_match(node, writer, level, fallback)?;
             } else {
                 // A pattern ends here.
@@ -164,30 +210,26 @@ impl Node {
     }
 }
 
-/// Generate a matcher.
-///
-/// This takes an iterator of tuple pairs `(K, V)`. `K` must be an iterator
-/// that generates bytes, e.g. `"key".bytes()`, and `V` must be a [`String`].
-///
-/// Call [`Node::render()`] on the result to actually generate the code.
-///
-/// ```rust
-/// use iter_matcher::generate;
-/// let node = generate([("a".bytes(), "1")]);
-/// ```
-pub fn generate<I, K, V>(key_values: I) -> Node
+impl<'a, K, V> FromIterator<(K, V)> for Node
 where
-    I: IntoIterator<Item = (K, V)>,
-    K: IntoIterator<Item = u8>,
+    K: IntoIterator<Item = &'a u8>,
     V: Into<String>,
 {
-    let mut root = Node::default();
-    key_values.into_iter().for_each(|(key, value)| {
-        let mut node = key.into_iter().fold(&mut root, |node, c| {
-            node.branch.entry(c).or_insert_with(Node::default)
-        });
+    fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> Node {
+        let mut root = Node::default();
+        root.extend(iter);
+        root
+    }
+}
 
-        node.leaf = Some(value.into());
-    });
-    root
+impl<'a, K, V> Extend<(K, V)> for Node
+where
+    K: IntoIterator<Item = &'a u8>,
+    V: Into<String>,
+{
+    fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iter: I) {
+        iter.into_iter().for_each(|(key, value)| {
+            self.add(key, value);
+        });
+    }
 }

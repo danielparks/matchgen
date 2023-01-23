@@ -1,8 +1,8 @@
 use clap::Parser;
-use iter_matcher::generate;
+use iter_matcher::Node;
 use std::fs;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::exit;
 
 #[derive(Debug, clap::Parser)]
@@ -19,26 +19,18 @@ fn main() {
 }
 
 fn cli(params: Params) -> anyhow::Result<()> {
-    generate(load_entities(&params.entities)).render(
-        &mut io::stdout(),
-        "fn match",
-        "&'static str",
-    )?;
-    Ok(())
-}
-
-fn load_entities(path: &Path) -> Vec<(Vec<u8>, String)> {
-    let input = fs::read(path).unwrap();
+    let input = fs::read(params.entities).unwrap();
     let input: serde_json::Map<String, serde_json::Value> =
         serde_json::from_slice(&input).unwrap();
 
-    input
-        .iter()
-        .map(|(name, info)| {
-            (
-                name.bytes().collect(),
-                format!("{:?}", info["characters"].as_str().unwrap()),
-            )
-        })
-        .collect()
+    let node = Node::from_iter(input.iter().map(|(name, info)| {
+        (
+            name.as_bytes(),
+            format!("{:?}", info["characters"].as_str().unwrap()),
+        )
+    }));
+
+    node.render(&mut io::stdout(), "fn match", "&'static str")?;
+
+    Ok(())
 }
