@@ -26,12 +26,10 @@ matcher to handle the four basic HTML entities:
 use std::env;
 use std::error::Error;
 use std::fs::File;
-use std::io::{BufWriter, Read, Write};
+use std::io::{BufWriter, Write};
 use std::path::Path;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    # let tmp_dir = temp_dir::TempDir::new().unwrap();
-    # env::set_var("OUT_DIR", tmp_dir.path());
     let out_path = Path::new(&env::var("OUT_DIR")?).join("matcher.rs");
     let mut out = BufWriter::new(File::create(out_path)?);
 
