@@ -1,4 +1,4 @@
-//! ### Example build script
+//! # Example build script
 //!
 //! ```rust
 //! use std::env;
@@ -23,6 +23,10 @@
 //!     Ok(())
 //! }
 //! ```
+//!
+//! # Minimum supported Rust version
+//!
+//! Currently the minimum supported Rust version (MSRV) is **1.60**.
 
 use std::collections::HashMap;
 use std::io;
