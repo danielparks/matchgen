@@ -1,5 +1,8 @@
-[package]
-name = "iter-matcher"
+[workspace]
+members = ["iter_matcher_tests"]
+default-members = ["iter_matcher_tests"]
+
+[workspace.package]
 version = "0.1.0"
 authors = ["Daniel Parks <oss-iter-matcher@demonhorse.org>"]
 description = "Generate sequence matchers for iterators (experimental)"
@@ -11,6 +14,23 @@ categories = [] # https://crates.io/category_slugs
 license = "MIT OR Apache-2.0"
 edition = "2021"
 rust-version = "1.60"
+
+[patch.crates-io]
+iter_matcher = { path = "." }
+
+[package]
+name = "iter_matcher"
+authors.workspace = true
+description.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+version.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 
