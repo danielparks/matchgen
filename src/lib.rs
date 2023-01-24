@@ -63,8 +63,8 @@ impl Node {
         K: IntoIterator<Item = &'a u8>,
         V: Into<String>,
     {
-        // Without this internal function `self` is moved into `fold()` and thus
-        // cannot be returned.
+        // FIXME? Without this internal function `self` is moved into `fold()`
+        // and thus cannot be returned.
         #[inline]
         fn internal<'a, K: Iterator<Item = &'a u8>>(
             node: &mut Node,
@@ -192,10 +192,10 @@ impl Node {
                 write!(writer, "{indent}    Some({chunk:?}) => ")?;
                 render_child(child, writer, level + 1, fallback)?;
                 if child.branch.is_empty() {
-                    // render_child() outputs a value, not a match block.
+                    // render_child() wrote a value, not a match block.
                     writeln!(writer, ",")?;
                 } else {
-                    // ender_child() outputs a match block.
+                    // render_child() wrote a match block.
                     writeln!(writer)?;
                 }
             }
