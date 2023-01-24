@@ -96,7 +96,6 @@ impl Node {
     /// ```rust
     /// use bstr::ByteVec;
     /// use iter_matcher::Node;
-    /// use std::iter::FromIterator;
     /// use pretty_assertions::assert_str_eq;
     ///
     /// let mut out = Vec::new();
