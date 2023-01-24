@@ -9,12 +9,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut out = BufWriter::new(File::create(out_path)?);
 
     writeln!(out, "/// Decode basic HTML entities.")?;
-    let mut node = iter_matcher::Node::default();
-    node.add(b"&amp;", "b'&'");
-    node.add(b"&lt;", "b'<'");
-    node.add(b"&gt;", "b'>'");
-    node.add(b"&quot;", "b'\"'");
-    node.render(&mut out, "pub fn entity_decode", "u8")?;
+    iter_matcher::Node::default()
+        .add(b"&amp;", "b'&'")
+        .add(b"&lt;", "b'<'")
+        .add(b"&gt;", "b'>'")
+        .add(b"&quot;", "b'\"'")
+        .render(&mut out, "pub fn entity_decode", "u8")?;
 
     Ok(())
 }
