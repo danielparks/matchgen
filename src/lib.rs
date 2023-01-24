@@ -84,17 +84,19 @@ impl Node {
     /// ### Example
     ///
     /// ```rust
+    /// use bstr::ByteVec;
     /// use iter_matcher::Node;
     /// use std::iter::FromIterator;
-    /// let mut out = Vec::new();
+    /// use pretty_assertions::assert_str_eq;
     ///
+    /// let mut out = Vec::new();
     /// Node::from_iter([("a".as_bytes(), "1")])
     ///     .render(&mut out, "fn match_bytes", "u64")
     ///     .unwrap();
     ///
-    /// assert_eq!(
-    ///     out,
-    ///     b"\
+    /// assert_str_eq!(
+    ///     out.into_string().unwrap(),
+    ///     "\
     /// fn match_bytes<'a, I>(iter: &mut I) -> Option<u64>
     /// where
     ///     I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,
