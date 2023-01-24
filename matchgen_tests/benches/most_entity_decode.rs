@@ -28,6 +28,11 @@ macro_rules! benchmark {
             input,
             |b, input| b.iter(|| most_entity_decode_slice(input)),
         );
+        $group.bench_with_input(
+            BenchmarkId::new("most_entity_decode_flat", $test_name),
+            input,
+            |b, input| b.iter(|| most_entity_decode_flat(input)),
+        );
     }};
 }
 

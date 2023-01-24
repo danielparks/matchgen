@@ -22,10 +22,16 @@ macro_rules! iai_benchmarks {
                         black_box($input.as_slice())
                     ))
                 }
+
+                fn [<$name _flat>]() -> (Option<&'static str>, &'static [u8]) {
+                    black_box(most_entity_decode_flat(
+                        black_box($input.as_slice())
+                    ))
+                }
             )+
 
             iai::main!(
-                $([<$name _iter>], [<$name _slice>],)+
+                $([<$name _iter>], [<$name _slice>], [<$name _flat>],)+
             );
         }
     }
