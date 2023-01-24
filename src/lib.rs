@@ -85,6 +85,7 @@ impl Node {
     ///
     /// ```rust
     /// use iter_matcher::Node;
+    /// use std::iter::FromIterator;
     /// let mut out = Vec::new();
     ///
     /// Node::from_iter([("a".as_bytes(), "1")])
