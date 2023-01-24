@@ -1,6 +1,6 @@
 [workspace]
-members = ["iter_matcher_tests"]
-default-members = ["iter_matcher_tests"]
+members = [".", "iter_matcher_tests"]
+default-members = [".", "iter_matcher_tests"]
 
 [workspace.package]
 version = "0.1.0"
