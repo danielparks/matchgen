@@ -45,6 +45,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
+To use the matcher:
+
+```rust
+include!(concat!(env!("OUT_DIR"), "/test-matchers.rs"));
+
+fn main() {
+    let mut iter = b"&amp; on &amp; on".iter();
+    assert!(entity_decode(&mut iter) == Some(b'&'));
+    assert!(iter.as_slice() == b" on &amp; on");
+}
+```
+
 ## License
 
 This project dual-licensed under the Apache 2 and MIT licenses. You may choose
