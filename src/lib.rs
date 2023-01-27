@@ -24,6 +24,18 @@
 //! }
 //! ```
 //!
+//! To use the matcher:
+//!
+//! ```rust,ignore
+//! include!(concat!(env!("OUT_DIR"), "/matcher.rs"));
+//!
+//! fn main() {
+//!     let mut iter = b"one two three".iter();
+//!     assert!(fancy_matcher(&mut iter) == Some(b"1"));
+//!     assert!(iter.as_slice() == b" two three");
+//! }
+//! ```
+//!
 //! # Minimum supported Rust version
 //!
 //! Currently the minimum supported Rust version (MSRV) is **1.60**.
