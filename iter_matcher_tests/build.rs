@@ -8,6 +8,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     let out_path = Path::new(&env::var("OUT_DIR")?).join("test-matchers.rs");
     let mut out = BufWriter::new(File::create(out_path)?);
 
+    writeln!(out, "/// Match nothing.")?;
+    iter_matcher::Node::default()
+        .render(&mut out, "pub fn match_nothing", "u8")?;
+    writeln!(out)?;
+
+    writeln!(out, "/// Match nothing with Some(true).")?;
+    iter_matcher::Node::default()
+        .add(b"", "true")
+        .render(&mut out, "pub fn match_nothing_true", "bool")?;
+    writeln!(out)?;
+
     writeln!(out, "/// Decode basic HTML entities.")?;
     iter_matcher::Node::default()
         .add(b"&amp;", "b'&'")

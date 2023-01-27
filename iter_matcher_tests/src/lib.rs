@@ -20,3 +20,5 @@ macro_rules! stub {
 
 stub!(all_entity_decode, &'static str);
 stub!(basic_entity_decode, u8);
+stub!(match_nothing, u8);
+stub!(match_nothing_true, bool);

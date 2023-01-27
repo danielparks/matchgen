@@ -130,14 +130,28 @@ impl Node {
         let indent = "    "; // Our formatting prevents embedding this.
         let fn_name = fn_name.as_ref();
         let return_type = return_type.as_ref();
-        write!(
-            writer,
-            "{fn_name}<'a, I>(iter: &mut I) -> Option<{return_type}>\n\
-            where\n\
-            {indent}I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,\n"
-        )?;
-        render_child(self, writer, 0, None)?;
-        writeln!(writer)?;
+
+        if self.branch.is_empty() {
+            // Special handling for when no matches were added.
+            write!(
+                writer,
+                "{fn_name}<'a, I>(_iter: &mut I) -> Option<{return_type}>\n\
+                where\n\
+                {indent}I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,\n\
+                {{\n\
+                {indent}")?;
+            render_child(self, writer, 0, None)?;
+            writeln!(writer, "\n}}")?;
+        } else {
+            write!(
+                writer,
+                "{fn_name}<'a, I>(iter: &mut I) -> Option<{return_type}>\n\
+                where\n\
+                {indent}I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,\n"
+            )?;
+            render_child(self, writer, 0, None)?;
+            writeln!(writer)?;
+        }
 
         // FIXME: this is recursive, so for long patterns it could blow out the
         // stack. Transform this to an iterative algorithm.
