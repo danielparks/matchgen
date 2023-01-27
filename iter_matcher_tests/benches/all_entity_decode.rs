@@ -13,10 +13,12 @@ macro_rules! benchmark {
         $group.bench_with_input(
             BenchmarkId::new("all_entity_decode", $test_name),
             input,
-            |b, input| b.iter(|| {
-                let mut iter = input.iter();
-                all_entity_decode(&mut iter)
-            })
+            |b, input| {
+                b.iter(|| {
+                    let mut iter = input.iter();
+                    all_entity_decode(&mut iter)
+                })
+            },
         );
     }};
 }
@@ -32,8 +34,16 @@ fn benchmarks(c: &mut Criterion) {
         .measurement_time(Duration::from_secs(10));
 
     benchmark!(group, "timesbar", b"&timesbar;");
-    benchmark!(group, "long_invalid", b"&xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    benchmark!(group, "long_none", b"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx;");
+    benchmark!(
+        group,
+        "long_invalid",
+        b"&xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    );
+    benchmark!(
+        group,
+        "long_none",
+        b"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx;"
+    );
 
     group.finish();
 }
