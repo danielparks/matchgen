@@ -1,29 +1,18 @@
-use clap::Parser;
 use iter_matcher::Node;
+use std::env;
 use std::io;
 use std::process::exit;
 
-#[derive(Debug, clap::Parser)]
-#[clap(version, about)]
-struct Params {
-    /// key=value
-    key_values: Vec<String>,
-}
-
 fn main() {
-    if let Err(error) = cli(Params::parse()) {
-        eprintln!("Error: {:#}", error);
-        exit(1);
-    }
-}
-
-#[allow(clippy::clone_double_ref)]
-fn cli(params: Params) -> anyhow::Result<()> {
-    let node = Node::from_iter(params.key_values.iter().map(|key_value| {
-        let key_value: Vec<&str> = key_value.splitn(2, '=').collect();
-        (key_value[0].as_bytes(), format!("{:?}", key_value[1]))
-    }));
-
-    node.render(&mut io::stdout(), "pub fn match", "&'static str")?;
-    Ok(())
+    let mut node = Node::default();
+    env::args().skip(1).for_each(|arg| {
+        let key_value: Vec<&str> = arg.splitn(2, '=').collect();
+        if key_value.len() < 2 {
+            eprintln!("Arguments must be key=value pairs: {arg:?}");
+            exit(1);
+        }
+        node.add(key_value[0].as_bytes(), format!("{:?}", key_value[1]));
+    });
+    node.render(&mut io::stdout(), "pub fn match", "&'static str")
+        .unwrap();
 }
