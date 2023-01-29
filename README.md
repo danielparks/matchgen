@@ -8,19 +8,26 @@ This crate can be used from a [build script] to generate a matcher function. The
 function accepts an iterator over bytes and returns a match if it finds a given
 byte sequence at the start of the iterator.
 
+For example, suppose you generate a [matcher for all HTML entities][htmlize]:
+
+```rust
+let mut iter = b"&times;XYZ".iter();
+assert!(entity_decode(&mut iter) == Some("×"));
+assert!(iter.next() == Some(b'X'));
+```
+
 The byte sequences it finds do not all have to be the same length. The matcher
 will clone the iterator if it needs to look ahead, so when the matcher returns
 the iterator will only have consumed what was matched.
 
 Note that this means if nothing is matched the iterator will not move. You may
-want to run `iterator.next()` if you’re running in a loop.
+want to call `iterator.next()` if you’re running in a loop.
 
 Note also that this does not search for the beginning of a match; it only checks
 the start of the iterator. Often you will want to use [`position()`] or
 the [memchr crate][memchr] to find the start of a potential match.
 
-This is useful for things like [decoding HTML entities][htmlize]. To create a
-matcher to handle the four basic HTML entities:
+To create a matcher to handle the four basic HTML entities:
 
 ```rust
 use std::env;
