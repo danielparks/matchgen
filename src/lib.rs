@@ -241,7 +241,7 @@ impl Node {
         #[inline]
         fn leaf_to_str(leaf: Option<&String>) -> String {
             if let Some(leaf) = leaf {
-                format!("Some({})", leaf)
+                format!("Some({leaf})")
             } else {
                 "None".to_string()
             }
