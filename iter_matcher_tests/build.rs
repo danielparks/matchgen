@@ -24,6 +24,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
     writeln!(out)?;
 
+    writeln!(out, "/// Match and return (bool, &[u8]).")?;
+    iter_matcher::Node::default()
+        .add(b"aab", "(true, &[1, 1])")
+        .add(b"aa", "(false, &[1, 1])")
+        .add(b"ab", "(true, &[1])")
+        .add(b"a", "(false, &[1])")
+        .render(&mut out, "pub fn slice_in_tuple", "(bool, &'static [u8])")?;
+    writeln!(out)?;
+
     writeln!(out, "/// Decode basic HTML entities.")?;
     iter_matcher::Node::default()
         .add(b"&amp;", "b'&'")
