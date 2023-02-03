@@ -1,4 +1,6 @@
-/target
-/iter_matcher_tests/target
+/target/*
+!/target/criterion
+/iter_matcher_tests/target/*
+!/iter_matcher_tests/target/iai
 **/*.rs.bk
 Cargo.lock

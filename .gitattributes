@@ -1,0 +1,3 @@
+# Prevent GitHub from counting benchmark results toward code totals
+target/** linguist-generated
+iter_matcher_tests/target/** linguist-generated
