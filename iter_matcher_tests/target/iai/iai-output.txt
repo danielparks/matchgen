@@ -1,0 +1,26 @@
+
+running 0 tests
+
+test result: [32mok(B[m. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+timesbar
+  Instructions:                 102
+  L1 Accesses:                  127
+  L2 Accesses:                    1
+  RAM Accesses:                  15
+  Estimated Cycles:             657
+
+long_invalid
+  Instructions:                  47
+  L1 Accesses:                   67
+  L2 Accesses:                    1
+  RAM Accesses:                   7
+  Estimated Cycles:             317
+
+long_none
+  Instructions:                  28
+  L1 Accesses:                   45
+  L2 Accesses:                    1
+  RAM Accesses:                   4
+  Estimated Cycles:             190
+
