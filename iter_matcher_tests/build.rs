@@ -25,12 +25,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out)?;
 
     writeln!(out, "/// Match and return (bool, &[u8]).")?;
+    writeln!(out, "#[cfg(not(feature = \"cargo-clippy\"))]")?;
     iter_matcher::Node::default()
         .add(b"aab", "(true, &[1, 1])")
         .add(b"aa", "(false, &[1, 1])")
         .add(b"ab", "(true, &[1])")
         .add(b"a", "(false, &[1])")
         .render(&mut out, "pub fn slice_in_tuple", "(bool, &'static [u8])")?;
+    writeln!(out)?;
+
+    writeln!(out, "#[cfg(feature = \"cargo-clippy\")]")?;
+    iter_matcher::render_stub(
+        &mut out,
+        "pub fn slice_in_tuple",
+        "(bool, &'static [u8])",
+    )?;
     writeln!(out)?;
 
     writeln!(out, "/// Decode basic HTML entities.")?;
@@ -43,6 +52,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out)?;
 
     writeln!(out, "/// Decode all HTML entities.")?;
+    writeln!(out, "#[cfg(not(feature = \"cargo-clippy\"))]")?;
     let input = fs::read("html-entities.json")?;
     let input: serde_json::Map<String, serde_json::Value> =
         serde_json::from_slice(&input)?;
@@ -53,6 +63,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         )
     }))
     .render(&mut out, "pub fn all_entity_decode", "&'static str")?;
+    writeln!(out)?;
+
+    writeln!(out, "#[cfg(feature = \"cargo-clippy\")]")?;
+    iter_matcher::render_stub(
+        &mut out,
+        "pub fn all_entity_decode",
+        "&'static str",
+    )?;
     writeln!(out)?;
 
     Ok(())

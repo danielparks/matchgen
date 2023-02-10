@@ -274,3 +274,12 @@ where
         });
     }
 }
+
+/// Render a stub function with the correct signature that does nothing.
+pub fn render_stub<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
+    writer: &mut W,
+    fn_name: N,
+    return_type: R,
+) -> io::Result<()> {
+    Node::default().render(writer, fn_name, return_type)
+}
