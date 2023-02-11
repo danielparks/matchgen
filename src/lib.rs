@@ -40,6 +40,8 @@
 //!
 //! Currently the minimum supported Rust version (MSRV) is **1.60**.
 
+#![forbid(unsafe_code)]
+
 use std::collections::HashMap;
 use std::io;
 
