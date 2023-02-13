@@ -1,6 +1,11 @@
+//! The main entry point to this crate is [`IterMatcher::new()`]. It is a
+//! wrapper around [`Node`], which provides a more basic interface. Generally,
+//! it will be easier, more useful, and clearer to use `IterMatcher`.
+//!
 //! # Example build script
 //!
 //! ```rust
+//! use iter_matcher::IterMatcher;
 //! use std::env;
 //! use std::error::Error;
 //! use std::fs::File;
@@ -14,11 +19,11 @@
 //!     let mut out = BufWriter::new(File::create(out_path)?);
 //!
 //!     writeln!(out, "/// My fancy matcher.")?;
-//!     iter_matcher::Node::default()
+//!     IterMatcher::new("pub fn fancy_matcher", "&'static [u8]")
 //!         .add(b"one", r#"b"1""#)
 //!         .add(b"two", r#"b"2""#)
 //!         .add(b"three", r#"b"3""#)
-//!         .render(&mut out, "pub fn fancy_matcher", "&'static [u8]")?;
+//!         .render(&mut out)?;
 //!
 //!     Ok(())
 //! }
@@ -47,7 +52,7 @@ use std::io;
 
 /// A node in the simple finite-state automaton that is a matcher.
 ///
-/// See [`Node::from_iter()`] and [`Node::render()`].
+/// You probably want to use [`IterMatcher::new()`] instead.
 #[derive(Debug, Default)]
 pub struct Node {
     /// If the matcher gets to this node and `leaf` is `Some(_)`, then we found
@@ -284,4 +289,145 @@ pub fn render_stub<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
     return_type: R,
 ) -> io::Result<()> {
     Node::default().render(writer, fn_name, return_type)
+}
+
+/// A matcher.
+#[derive(Debug)]
+pub struct IterMatcher {
+    /// The first part of the function definition to generate, e.g.
+    /// `"pub fn matcher"`.
+    pub fn_name: String,
+
+    /// The return type (will be wrapped in [`Option`]), e.g. `"&'static str"`.
+    pub return_type: String,
+
+    /// Whether or not to prevent Clippy from evaluating the generated code.
+    ///
+    /// See [`Self::disable_clippy()`].
+    pub disable_clippy: bool,
+
+    /// The root of the matcher node tree.
+    pub root: Node,
+}
+
+impl IterMatcher {
+    /// Create a new matcher (for use in a build script).
+    ///
+    /// This will generate a matcher with the the specified function name and
+    /// return type. You can add matches to it with [`Self::add()`] and/or
+    /// [`Self::extend()`], then turn it into code with [`Self::render()`].
+    ///
+    /// See the [crate documentation][crate] for a complete example.
+    pub fn new<N: AsRef<str>, R: AsRef<str>>(
+        fn_name: N,
+        return_type: R,
+    ) -> Self {
+        Self {
+            fn_name: fn_name.as_ref().to_string(),
+            return_type: return_type.as_ref().to_string(),
+            disable_clippy: false,
+            root: Node::default(),
+        }
+    }
+
+    /// Add a match.
+    ///
+    /// ```rust
+    /// let mut matcher = iter_matcher::IterMatcher::new("fn matcher", "u64");
+    /// matcher.add(b"a", "1");
+    /// ```
+    pub fn add<'a, K, V>(&mut self, key: K, value: V) -> &mut Self
+    where
+        K: IntoIterator<Item = &'a u8>,
+        V: Into<String>,
+    {
+        self.root.add(key, value);
+        self
+    }
+
+    /// Set whether or not to prevent [Clippy] from evaluating the generated
+    /// code.
+    ///
+    /// If set to `true`, this will use conditional compilation to prevent
+    /// [Clippy] from evaluating the generated code, and will provide a stub
+    /// function to ensure that the Clippy pass builds.
+    ///
+    /// This may be useful if the produced matcher is particularly big. I don’t
+    /// recommend setting this to `true` unless you notice a delay when running
+    /// `cargo clippy`.
+    ///
+    /// [Clippy]: https://doc.rust-lang.org/clippy/
+    pub fn disable_clippy(&mut self, disable: bool) -> &mut Self {
+        self.disable_clippy = disable;
+        self
+    }
+
+    /// Render the matcher into Rust code.
+    ///
+    /// ### Example
+    ///
+    /// ```rust
+    /// use bstr::ByteVec;
+    /// use iter_matcher::IterMatcher;
+    /// use pretty_assertions::assert_str_eq;
+    ///
+    /// let mut out = Vec::new();
+    /// let mut matcher = IterMatcher::new("fn match_bytes", "u64");
+    /// matcher.disable_clippy(true);
+    /// matcher.extend([("a".as_bytes(), "1")]);
+    /// matcher.render(&mut out).unwrap();
+    ///
+    /// assert_str_eq!(
+    ///     out.into_string().unwrap(),
+    ///     r#"#[cfg(not(feature = "cargo-clippy"))]
+    /// fn match_bytes<'a, I>(iter: &mut I) -> Option<u64>
+    /// where
+    ///     I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,
+    /// {
+    ///     let fallback_iter = iter.clone();
+    ///     match iter.next() {
+    ///         Some(97) => Some(1),
+    ///         _ => {
+    ///             *iter = fallback_iter;
+    ///             None
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// #[cfg(feature = "cargo-clippy")]
+    /// fn match_bytes<'a, I>(_iter: &mut I) -> Option<u64>
+    /// where
+    ///     I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,
+    /// {
+    ///     None
+    /// }
+    /// "#);
+    /// ```
+    pub fn render<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+        if self.disable_clippy {
+            writeln!(writer, "#[cfg(not(feature = \"cargo-clippy\"))]")?;
+        }
+
+        self.root.render(writer, &self.fn_name, &self.return_type)?;
+
+        if self.disable_clippy {
+            writeln!(writer)?;
+            writeln!(writer, "#[cfg(feature = \"cargo-clippy\")]")?;
+            render_stub(writer, &self.fn_name, &self.return_type)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl<'a, K, V> Extend<(K, V)> for IterMatcher
+where
+    K: IntoIterator<Item = &'a u8>,
+    V: Into<String>,
+{
+    fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iter: I) {
+        iter.into_iter().for_each(|(key, value)| {
+            self.add(key, value);
+        });
+    }
 }
