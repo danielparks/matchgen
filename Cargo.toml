@@ -9,7 +9,7 @@ iter_matcher = { path = "." }
 name = "iter_matcher"
 version = "0.1.0"
 authors = ["Daniel Parks <oss-iter-matcher@demonhorse.org>"]
-description = "Generate sequence matchers for iterators (experimental)"
+description = "Generate fast matchers for multiple prefixes"
 homepage = "https://github.com/danielparks/iter-matcher"
 repository = "https://github.com/danielparks/iter-matcher"
 readme = "README.md"

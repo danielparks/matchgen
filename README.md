@@ -1,4 +1,4 @@
-# Generate sequence matchers for iterators (experimental)
+# Generate fast matchers for multiple prefixes
 
 [![docs.rs](https://img.shields.io/docsrs/iter-matcher)][docs.rs]
 [![Crates.io](https://img.shields.io/crates/v/iter-matcher)][crates.io]
@@ -8,28 +8,32 @@ This crate can be used from a [build script] to generate a matcher function. The
 function accepts an iterator over bytes and returns a match if it finds a given
 byte sequence at the start of the iterator.
 
-For example, suppose you generate a [matcher for all HTML entities][htmlize]:
+For example, suppose you generate a [matcher for all HTML entities][htmlize]
+called `entity_matcher()`:
 
 ```rust
 let mut iter = b"&times;XYZ".iter();
-assert!(entity_decode(&mut iter) == Some("×"));
+assert!(entity_matcher(&mut iter) == Some("×"));
 assert!(iter.next() == Some(b'X'));
 ```
 
-The byte sequences it finds do not all have to be the same length. The matcher
-will clone the iterator if it needs to look ahead, so when the matcher returns
-the iterator will only have consumed what was matched.
+  * **The prefixes it checks do not all have to be the same length.** The
+    matcher will clone the iterator if it needs to look ahead, so when the
+    matcher returns the iterator will only have consumed what was matched.
+  * **If more than one prefix matches, it will return the longest one.**
+  * **If nothing matches, the iterator will not be advanced.** You may want to
+    call `iterator.next()` if the matcher returns `None`.
+  * **It only checks the start of the iterator.** Often you will want to use
+    [`position()`] or the [memchr crate][memchr] to find the start of a
+    potential match.
 
-Note that this means if nothing is matched the iterator will not move. You may
-want to call `iterator.next()` if you’re running in a loop.
+## Simple example
 
-Note also that this does not search for the beginning of a match; it only checks
-the start of the iterator. Often you will want to use [`position()`] or
-the [memchr crate][memchr] to find the start of a potential match.
-
-To create a matcher to handle the four basic HTML entities:
+To create a matcher to handle the four basic HTML entities, use a build script
+like the following:
 
 ```rust
+use iter_matcher::IterMatcher;
 use std::env;
 use std::error::Error;
 use std::fs::File;
@@ -41,12 +45,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut out = BufWriter::new(File::create(out_path)?);
 
     writeln!(out, "/// Decode basic HTML entities.")?;
-    iter_matcher::Node::default()
+    IterMatcher::new("pub fn entity_decode", "u8")
         .add(b"&amp;", "b'&'")
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
         .add(b"&quot;", "b'\"'")
-        .render(&mut out, "pub fn entity_decode", "u8")?;
+        .render(&mut out)?;
 
     Ok(())
 }
