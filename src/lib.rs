@@ -1,6 +1,5 @@
-//! The main entry point to this crate is [`IterMatcher::new()`]. It is a
-//! wrapper around [`Node`], which provides a more basic interface. Generally,
-//! it will be easier, more useful, and clearer to use `IterMatcher`.
+//! This crate can be used from a [build script] to generate a matcher function.
+//! The main entry point is [`IterMatcher`].
 //!
 //! # Example build script
 //!
@@ -44,15 +43,17 @@
 //! # Minimum supported Rust version
 //!
 //! Currently the minimum supported Rust version (MSRV) is **1.60**.
+//!
+//! [build script]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 
 #![forbid(unsafe_code)]
 
 use std::collections::HashMap;
 use std::io;
 
-/// A node in the simple finite-state automaton that is a matcher.
+/// A node in a matcher’s simple finite-state automaton.
 ///
-/// You probably want to use [`IterMatcher::new()`] instead.
+/// You probably want to use [`IterMatcher`] instead.
 #[derive(Debug, Default)]
 pub struct Node {
     /// If the matcher gets to this node and `leaf` is `Some(_)`, then we found
@@ -291,7 +292,36 @@ pub fn render_stub<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
     Node::default().render(writer, fn_name, return_type)
 }
 
-/// A matcher.
+/// A matcher function builder.
+///
+/// The generated function will accept an iterator over bytes and will return a
+/// match if it finds a given byte sequence at the start of the iterator.
+///
+/// For example, suppose you generate a [matcher for all HTML entities][htmlize]
+/// called `entity_matcher()`:
+///
+/// ```rust,ignore
+/// let mut iter = b"&times;XYZ".iter();
+/// assert!(entity_matcher(&mut iter) == Some("×"));
+/// assert!(iter.next() == Some(b'X'));
+/// ```
+///
+///   * **The prefixes it checks do not all have to be the same length.** The
+///     matcher will clone the iterator if it needs to look ahead, so when the
+///     matcher returns the iterator will only have consumed what was matched.
+///   * **If more than one prefix matches, it will return the longest one.**
+///   * **If nothing matches, the iterator will not be advanced.** You may want
+///     to call `iterator.next()` if the matcher returns `None`.
+///   * **It only checks the start of the iterator.** Often you will want to use
+///     [`position()`] or the [memchr crate][memchr] to find the start of a
+///     potential match.
+///
+/// See the [crate] documentation for an example of how to use this from a build
+/// script.
+///
+/// [`position()`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.position
+/// [memchr]: http://docs.rs/memchr
+/// [htmlize]: https://crates.io/crates/htmlize
 #[derive(Debug)]
 pub struct IterMatcher {
     /// The first part of the function definition to generate, e.g.
