@@ -59,7 +59,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 To use the matcher:
 
 ```rust
-include!(concat!(env!("OUT_DIR"), "/test-matchers.rs"));
+include!(concat!(env!("OUT_DIR"), "/matcher.rs"));
 
 fn main() {
     let mut iter = b"&amp; on &amp; on".iter();
