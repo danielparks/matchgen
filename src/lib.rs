@@ -194,7 +194,6 @@ impl Node {
                 // No patterns end here: branch only. (The level check creates
                 // a default root pattern of `[] => None` so that we rewind the
                 // iter when nothing matches.)
-                // FIXME: make this configurable.
                 render_match(node, writer, level, fallback)?;
             } else {
                 // A pattern ends here.
