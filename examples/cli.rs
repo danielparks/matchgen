@@ -4,7 +4,7 @@ use std::io;
 use std::process::exit;
 
 fn main() {
-    let mut matcher = IterMatcher::new("pub fn match", "&'static str");
+    let mut matcher = IterMatcher::new("pub fn matcher", "&'static str");
     env::args().skip(1).for_each(|arg| {
         let key_value: Vec<&str> = arg.splitn(2, '=').collect();
         if key_value.len() < 2 {
