@@ -1,4 +1,4 @@
-use iter_matcher::{Input, TreeMatcher};
+use matchgen::{Input, TreeMatcher};
 use std::env;
 use std::io;
 use std::process::exit;

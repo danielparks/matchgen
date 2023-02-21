@@ -1,5 +1,5 @@
 use assert2::check;
-use iter_matcher_tests::*;
+use matchgen_tests::*;
 use paste::paste;
 
 macro_rules! test {

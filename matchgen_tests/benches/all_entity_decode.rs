@@ -1,7 +1,7 @@
 use criterion::{
     criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
 };
-use iter_matcher_tests::*;
+use matchgen_tests::*;
 use std::convert::TryInto;
 use std::time::Duration;
 
