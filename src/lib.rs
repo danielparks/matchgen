@@ -1,5 +1,6 @@
-//! This crate can be used from a [build script] to generate a matcher function.
-//! The main entry point is [`IterMatcher`].
+//! [`IterMatcher`] can be used from a [build script] to generate a function
+//! that accepts an iterator over bytes and returns a mapped value if it finds a
+//! given byte sequence at the start of the iterator.
 //!
 //! # Example build script
 //!

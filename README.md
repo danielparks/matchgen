@@ -1,12 +1,12 @@
-# Generate fast matchers for multiple prefixes
+# Generate functions to quickly map string prefixes to values
 
 [![docs.rs](https://img.shields.io/docsrs/iter-matcher)][docs.rs]
 [![Crates.io](https://img.shields.io/crates/v/iter-matcher)][crates.io]
 ![Rust version 1.60+](https://img.shields.io/badge/Rust%20version-1.60%2B-success)
 
-This crate can be used from a [build script] to generate a matcher function. The
-function accepts an iterator over bytes and returns a match if it finds a given
-byte sequence at the start of the iterator.
+[`IterMatcher`] can be used from a [build script] to generate a matcher
+function. The function accepts an iterator over bytes and returns a mapped value
+if it finds a given byte sequence at the start of the iterator.
 
 For example, suppose you generate a [matcher for all HTML entities][htmlize]
 called `entity_matcher()`:
@@ -84,6 +84,7 @@ additional terms or conditions.
 
 [docs.rs]: https://docs.rs/iter-matcher/latest/iter_matcher/
 [crates.io]: https://crates.io/crates/iter-matcher
+[`IterMatcher`]: https://docs.rs/iter-matcher/latest/iter_matcher/struct.IterMatcher.html
 [build script]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 [`position()`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.position
 [memchr]: http://docs.rs/memchr
