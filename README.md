@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
         .add(b"&quot;", "b'\"'")
-        .render(&mut out)?;
+        .render_iter(&mut out)?;
 
     Ok(())
 }

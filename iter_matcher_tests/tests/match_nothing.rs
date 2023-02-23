@@ -1,17 +1,28 @@
 use assert2::check;
 use iter_matcher_tests::*;
+use paste::paste;
 
 macro_rules! test {
     ($name:ident, $input:expr, $result:expr, $remainder:expr) => {
-        #[test]
-        fn $name() {
-            let input = $input;
-            let mut iter = input.iter();
-            check!(match_nothing_true(&mut iter) == $result);
-            check!(iter.as_slice() == $remainder);
+        paste! {
+            #[test]
+            fn [<$name _iter>]() {
+                let input = $input;
+                let mut iter = input.iter();
+                check!(match_nothing(&mut iter) == $result);
+                check!(iter.as_slice() == $remainder);
+            }
+
+            #[test]
+            fn [<$name _slice>]() {
+                check!(
+                    match_nothing_slice($input)
+                    == ($result, $remainder.as_slice())
+                );
+            }
         }
     };
 }
 
-test!(nothing, b"", Some(true), b"");
-test!(chars, b"abc", Some(true), b"abc");
+test!(nothing, b"", None, b"");
+test!(chars, b"abc", None, b"abc");

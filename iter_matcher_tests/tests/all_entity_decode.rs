@@ -1,14 +1,25 @@
 use assert2::check;
 use iter_matcher_tests::*;
+use paste::paste;
 
 macro_rules! test {
     ($name:ident, $input:expr, $result:expr, $remainder:expr) => {
-        #[test]
-        fn $name() {
-            let input = $input;
-            let mut iter = input.iter();
-            check!(all_entity_decode(&mut iter) == $result);
-            check!(iter.as_slice() == $remainder);
+        paste! {
+            #[test]
+            fn [<$name _iter>]() {
+                let input = $input;
+                let mut iter = input.iter();
+                check!(all_entity_decode(&mut iter) == $result);
+                check!(iter.as_slice() == $remainder);
+            }
+
+            #[test]
+            fn [<$name _slice>]() {
+                check!(
+                    all_entity_decode_slice($input)
+                    == ($result, $remainder.as_slice())
+                );
+            }
         }
     };
 }

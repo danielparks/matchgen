@@ -20,6 +20,11 @@ macro_rules! benchmark {
                 })
             },
         );
+        $group.bench_with_input(
+            BenchmarkId::new("all_entity_decode_slice", $test_name),
+            input,
+            |b, input| b.iter(|| all_entity_decode_slice(input)),
+        );
     }};
 }
 

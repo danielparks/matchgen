@@ -3,24 +3,45 @@ running 0 tests
 
 test result: [32mok(B[m. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-timesbar
-  Instructions:                 102
-  L1 Accesses:                  127
+timesbar_iter
+  Instructions:                 107
+  L1 Accesses:                  133
   L2 Accesses:                    1
-  RAM Accesses:                  15
-  Estimated Cycles:             657
+  RAM Accesses:                  14
+  Estimated Cycles:             628
 
-long_invalid
-  Instructions:                  47
-  L1 Accesses:                   67
-  L2 Accesses:                    1
+timesbar_slice
+  Instructions:                  92
+  L1 Accesses:                  108
+  L2 Accesses:                    4
+  RAM Accesses:                  14
+  Estimated Cycles:             618
+
+long_invalid_iter
+  Instructions:                  53
+  L1 Accesses:                   71
+  L2 Accesses:                    2
+  RAM Accesses:                   8
+  Estimated Cycles:             361
+
+long_invalid_slice
+  Instructions:                  45
+  L1 Accesses:                   59
+  L2 Accesses:                    4
   RAM Accesses:                   7
-  Estimated Cycles:             317
+  Estimated Cycles:             324
 
-long_none
-  Instructions:                  28
-  L1 Accesses:                   45
+long_none_iter
+  Instructions:                  33
+  L1 Accesses:                   51
   L2 Accesses:                    1
+  RAM Accesses:                   3
+  Estimated Cycles:             161
+
+long_none_slice
+  Instructions:                  31
+  L1 Accesses:                   46
+  L2 Accesses:                    3
   RAM Accesses:                   4
-  Estimated Cycles:             190
+  Estimated Cycles:             201
 
