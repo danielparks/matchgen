@@ -125,7 +125,6 @@ impl Node {
     ///     .unwrap();
     ///
     /// assert_str_eq!(
-    ///     out.into_string().unwrap(),
     ///     "\
     /// fn match_bytes<'a, I>(iter: &mut I) -> Option<u64>
     /// where
@@ -140,7 +139,9 @@ impl Node {
     ///         }
     ///     }
     /// }
-    /// ");
+    /// ",
+    ///     out.into_string().unwrap(),
+    /// );
     /// ```
     pub fn render<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
         &self,
@@ -408,7 +409,6 @@ impl IterMatcher {
     /// matcher.render(&mut out).unwrap();
     ///
     /// assert_str_eq!(
-    ///     out.into_string().unwrap(),
     ///     r#"#[cfg(not(feature = "cargo-clippy"))]
     /// fn match_bytes<'a, I>(iter: &mut I) -> Option<u64>
     /// where
@@ -431,7 +431,9 @@ impl IterMatcher {
     /// {
     ///     None
     /// }
-    /// "#);
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
     /// ```
     pub fn render<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         if self.disable_clippy {
