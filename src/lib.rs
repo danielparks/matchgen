@@ -23,7 +23,7 @@
 //!         .add(b"one", r#"b"1""#)
 //!         .add(b"two", r#"b"2""#)
 //!         .add(b"three", r#"b"3""#)
-//!         .render(&mut out)?;
+//!         .render_iter(&mut out)?;
 //!
 //!     Ok(())
 //! }
@@ -101,7 +101,7 @@ impl Node {
         self
     }
 
-    /// Render the matcher into Rust code.
+    /// Render the matcher into Rust code that works on an iterator.
     ///
     /// The parameters are:
     ///
@@ -121,7 +121,7 @@ impl Node {
     ///
     /// let mut out = Vec::new();
     /// Node::from_iter([("a".as_bytes(), "1")])
-    ///     .render(&mut out, "fn match_bytes", "u64")
+    ///     .render_iter(&mut out, "fn match_bytes", "u64")
     ///     .unwrap();
     ///
     /// assert_str_eq!(
@@ -143,7 +143,7 @@ impl Node {
     ///     out.into_string().unwrap(),
     /// );
     /// ```
-    pub fn render<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
+    pub fn render_iter<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
         &self,
         writer: &mut W,
         fn_name: N,
@@ -258,6 +258,139 @@ impl Node {
 
         Ok(())
     }
+
+    /// Render the matcher into Rust code that works on a slice.
+    ///
+    /// The parameters are:
+    ///
+    ///   1. An instance of [`std::io::Write`], like [`std::io::stdout()`], a
+    ///      file, or a [`Vec`].
+    ///   2. The first part of the function definition to generate, e.g.
+    ///      `"pub fn matcher"`.
+    ///   3. The return type (will be wrapped in [`Option`] and a tuple), e.g.
+    ///      `"&'static str"`.
+    ///
+    /// ### Example
+    ///
+    /// ```rust
+    /// use bstr::ByteVec;
+    /// use iter_matcher::Node;
+    /// use pretty_assertions::assert_str_eq;
+    ///
+    /// let mut out = Vec::new();
+    /// Node::from_iter([("a".as_bytes(), "1")])
+    ///     .render_slice(&mut out, "fn match_bytes", "u64")
+    ///     .unwrap();
+    ///
+    /// assert_str_eq!(
+    ///     "\
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     match slice.first() {
+    ///         Some(97) => (Some(1), &slice[1..]),
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    /// ",
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    pub fn render_slice<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
+        &self,
+        writer: &mut W,
+        fn_name: N,
+        return_type: R,
+    ) -> io::Result<()> {
+        let indent = "    "; // Our formatting prevents embedding this.
+        let fn_name = fn_name.as_ref();
+        let return_type = return_type.as_ref();
+
+        write!(
+            writer,
+            "{fn_name}(slice: &[u8]) -> (Option<{return_type}>, &[u8]) {{\n\
+            {indent}",
+        )?;
+        render_child(self, writer, 0, None)?;
+        writeln!(writer, "\n}}")?;
+
+        // FIXME: this is recursive, so for long patterns it could blow out the
+        // stack. Transform this to an iterative algorithm.
+
+        #[inline]
+        pub fn render_child<W: io::Write>(
+            node: &Node,
+            writer: &mut W,
+            index: usize,
+            fallback: Option<(&String, usize)>,
+        ) -> io::Result<()> {
+            if node.branch.is_empty() {
+                // Terminal. node.leaf should be Some(_), but might not be.
+                if let Some(leaf) = &node.leaf {
+                    write!(writer, "(Some({leaf}), &slice[{index}..])")?;
+                } else if let Some((value, fallback)) = fallback {
+                    write!(writer, "(Some({value}), &slice[{fallback}..])")?;
+                } else {
+                    write!(writer, "(None, slice)")?;
+                }
+            } else if node.leaf.is_none() {
+                // No patterns end here: branch only.
+                render_match(node, writer, index, fallback)?;
+            } else {
+                // A pattern ends here.
+                render_match(
+                    node,
+                    writer,
+                    index,
+                    node.leaf.as_ref().map(|leaf| (leaf, index)),
+                )?;
+            }
+
+            Ok(())
+        }
+
+        #[inline]
+        fn render_match<W: io::Write>(
+            node: &Node,
+            writer: &mut W,
+            index: usize,
+            fallback: Option<(&String, usize)>,
+        ) -> io::Result<()> {
+            let indent = "    ".repeat(index + 1);
+            if index == 0 {
+                // For Clippy.
+                writeln!(writer, "match slice.first() {{")?;
+            } else {
+                writeln!(writer, "match slice.get({index}) {{")?;
+            }
+
+            for (chunk, child) in &node.branch {
+                write!(writer, "{indent}    Some({chunk:?}) => ")?;
+                render_child(child, writer, index + 1, fallback)?;
+                if child.branch.is_empty() {
+                    // render_child() wrote a value, not a match block.
+                    writeln!(writer, ",")?;
+                } else {
+                    // render_child() wrote a match block.
+                    writeln!(writer)?;
+                }
+            }
+
+            let default = if let Some((value, fallback)) = fallback {
+                format!("(Some({value}), &slice[{fallback}..])")
+            } else {
+                "(None, slice)".to_string()
+            };
+
+            write!(
+                writer,
+                "{indent}    _ => {default},\n\
+                {indent}}}"
+            )?;
+
+            Ok(())
+        }
+
+        Ok(())
+    }
 }
 
 impl<'a, K, V> FromIterator<(K, V)> for Node
@@ -284,13 +417,24 @@ where
     }
 }
 
-/// Render a stub function with the correct signature that does nothing.
-pub fn render_stub<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
+/// Render a stub function with the correct signature for consuming an iterator
+/// that does nothing.
+pub fn render_iter_stub<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
     writer: &mut W,
     fn_name: N,
     return_type: R,
 ) -> io::Result<()> {
-    Node::default().render(writer, fn_name, return_type)
+    Node::default().render_iter(writer, fn_name, return_type)
+}
+
+/// Render a stub function with the correct signature for consuming a slice that
+/// does nothing.
+pub fn render_slice_stub<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
+    writer: &mut W,
+    fn_name: N,
+    return_type: R,
+) -> io::Result<()> {
+    Node::default().render_slice(writer, fn_name, return_type)
 }
 
 /// A matcher function builder.
@@ -346,7 +490,8 @@ impl IterMatcher {
     ///
     /// This will generate a matcher with the the specified function name and
     /// return type. You can add matches to it with [`Self::add()`] and/or
-    /// [`Self::extend()`], then turn it into code with [`Self::render()`].
+    /// [`Self::extend()`], then turn it into code with
+    /// [`Self::render_slice()`].
     ///
     /// See the [crate documentation][crate] for a complete example.
     pub fn new<N: AsRef<str>, R: AsRef<str>>(
@@ -406,7 +551,7 @@ impl IterMatcher {
     /// let mut matcher = IterMatcher::new("fn match_bytes", "u64");
     /// matcher.disable_clippy(true);
     /// matcher.extend([("a".as_bytes(), "1")]);
-    /// matcher.render(&mut out).unwrap();
+    /// matcher.render_iter(&mut out).unwrap();
     ///
     /// assert_str_eq!(
     ///     r#"#[cfg(not(feature = "cargo-clippy"))]
@@ -435,17 +580,67 @@ impl IterMatcher {
     ///     out.into_string().unwrap(),
     /// );
     /// ```
-    pub fn render<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+    pub fn render_iter<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         if self.disable_clippy {
             writeln!(writer, "#[cfg(not(feature = \"cargo-clippy\"))]")?;
         }
 
-        self.root.render(writer, &self.fn_name, &self.return_type)?;
+        self.root
+            .render_iter(writer, &self.fn_name, &self.return_type)?;
 
         if self.disable_clippy {
             writeln!(writer)?;
             writeln!(writer, "#[cfg(feature = \"cargo-clippy\")]")?;
-            render_stub(writer, &self.fn_name, &self.return_type)?;
+            render_iter_stub(writer, &self.fn_name, &self.return_type)?;
+        }
+
+        Ok(())
+    }
+
+    /// Render the matcher into Rust code.
+    ///
+    /// ### Example
+    ///
+    /// ```rust
+    /// use bstr::ByteVec;
+    /// use iter_matcher::IterMatcher;
+    /// use pretty_assertions::assert_str_eq;
+    ///
+    /// let mut out = Vec::new();
+    /// let mut matcher = IterMatcher::new("fn match_bytes", "u64");
+    /// matcher.disable_clippy(true);
+    /// matcher.extend([("a".as_bytes(), "1")]);
+    /// matcher.render_slice(&mut out).unwrap();
+    ///
+    /// assert_str_eq!(
+    ///     r#"#[cfg(not(feature = "cargo-clippy"))]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     match slice.first() {
+    ///         Some(97) => (Some(1), &slice[1..]),
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    ///
+    /// #[cfg(feature = "cargo-clippy")]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     (None, slice)
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    pub fn render_slice<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+        if self.disable_clippy {
+            writeln!(writer, "#[cfg(not(feature = \"cargo-clippy\"))]")?;
+        }
+
+        self.root
+            .render_slice(writer, &self.fn_name, &self.return_type)?;
+
+        if self.disable_clippy {
+            writeln!(writer)?;
+            writeln!(writer, "#[cfg(feature = \"cargo-clippy\")]")?;
+            render_slice_stub(writer, &self.fn_name, &self.return_type)?;
         }
 
         Ok(())
