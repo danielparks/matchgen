@@ -5,27 +5,23 @@
 ![Rust version 1.60+](https://img.shields.io/badge/Rust%20version-1.60%2B-success)
 
 [`TreeMatcher`] can be used from a [build script] to generate a matcher
-function. The function accepts an iterator over bytes and returns a mapped value
-if it finds a given byte sequence at the start of the iterator.
+function that maps byte sequences to arbitrary values. It returns the mapped
+value (or `None`) and the remainder of the input.
 
 For example, suppose you generate a [matcher for all HTML entities][htmlize]
 called `entity_matcher()`:
 
 ```rust
-let mut iter = b"&times;XYZ".iter();
-assert!(entity_matcher(&mut iter) == Some("×"));
-assert!(iter.next() == Some(b'X'));
+assert!(entity_matcher(b"&times;XYZ") == (Some("×"), b"XYZ".as_slice()));
 ```
 
-  * **The prefixes it checks do not all have to be the same length.** The
-    matcher will clone the iterator if it needs to look ahead, so when the
-    matcher returns the iterator will only have consumed what was matched.
-  * **If more than one prefix matches, it will return the longest one.**
-  * **If nothing matches, the iterator will not be advanced.** You may want to
-    call `iterator.next()` if the matcher returns `None`.
-  * **It only checks the start of the iterator.** Often you will want to use
-    [`position()`] or the [memchr crate][memchr] to find the start of a
-    potential match.
+  * The prefixes it checks do not all have to be the same length.
+  * If more than one prefix matches, it will return the longest one.
+  * If nothing matches, it will return `(None, &input)`.
+
+Since the matchers only check the start of the input, you will want to use
+[`iter().position()`] or the [memchr crate][memchr] to find the start of a
+potential match.
 
 ## Simple example
 
@@ -50,7 +46,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
         .add(b"&quot;", "b'\"'")
-        .render_iter(&mut out)?;
+        .render_slice(&mut out)?;
 
     Ok(())
 }
@@ -62,9 +58,10 @@ To use the matcher:
 include!(concat!(env!("OUT_DIR"), "/matcher.rs"));
 
 fn main() {
-    let mut iter = b"&amp; on &amp; on".iter();
-    assert!(entity_decode(&mut iter) == Some(b'&'));
-    assert!(iter.as_slice() == b" on &amp; on");
+    assert_eq!(
+      entity_decode(b"&amp; on &amp; on"),
+      (Some(b'&'), b" on &amp; on".as_slice()),
+    );
 }
 ```
 
@@ -86,6 +83,6 @@ additional terms or conditions.
 [crates.io]: https://crates.io/crates/iter-matcher
 [`TreeMatcher`]: https://docs.rs/iter-matcher/latest/iter_matcher/struct.TreeMatcher.html
 [build script]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
-[`position()`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.position
+[`iter().position()`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.position
 [memchr]: http://docs.rs/memchr
 [htmlize]: https://crates.io/crates/htmlize
