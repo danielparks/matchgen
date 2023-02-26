@@ -1,4 +1,4 @@
-use iter_matcher::IterMatcher;
+use iter_matcher::TreeMatcher;
 use std::env;
 use std::error::Error;
 use std::fs::{self, File};
@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out)?;
 
     writeln!(out, "/// Match and return (bool, &[u8]).")?;
-    IterMatcher::new("pub fn slice_in_tuple", "(bool, &'static [u8])")
+    TreeMatcher::new("pub fn slice_in_tuple", "(bool, &'static [u8])")
         .add(b"aab", "(true, &[1, 1])")
         .add(b"aa", "(false, &[1, 1])")
         .add(b"ab", "(true, &[1])")
@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out)?;
 
     writeln!(out, "/// Match and return (bool, &[u8]).")?;
-    IterMatcher::new("pub fn slice_in_tuple_slice", "(bool, &'static [u8])")
+    TreeMatcher::new("pub fn slice_in_tuple_slice", "(bool, &'static [u8])")
         .add(b"aab", "(true, &[1, 1])")
         .add(b"aa", "(false, &[1, 1])")
         .add(b"ab", "(true, &[1])")
@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out)?;
 
     writeln!(out, "/// Decode basic HTML entities.")?;
-    IterMatcher::new("pub fn basic_entity_decode", "u8")
+    TreeMatcher::new("pub fn basic_entity_decode", "u8")
         .add(b"&amp;", "b'&'")
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
@@ -68,7 +68,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out)?;
 
     writeln!(out, "/// Decode basic HTML entities.")?;
-    IterMatcher::new("pub fn basic_entity_decode_slice", "u8")
+    TreeMatcher::new("pub fn basic_entity_decode_slice", "u8")
         .add(b"&amp;", "b'&'")
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
@@ -82,7 +82,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input: serde_json::Map<String, serde_json::Value> =
         serde_json::from_slice(&input)?;
     let mut matcher =
-        IterMatcher::new("pub fn all_entity_decode", "&'static str");
+        TreeMatcher::new("pub fn all_entity_decode", "&'static str");
     matcher.disable_clippy(true);
     matcher.extend(input.iter().map(|(name, info)| {
         (

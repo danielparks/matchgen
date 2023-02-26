@@ -1,11 +1,11 @@
-//! [`IterMatcher`] can be used from a [build script] to generate a function
+//! [`TreeMatcher`] can be used from a [build script] to generate a function
 //! that accepts an iterator over bytes and returns a mapped value if it finds a
 //! given byte sequence at the start of the iterator.
 //!
 //! # Example build script
 //!
 //! ```rust
-//! use iter_matcher::IterMatcher;
+//! use iter_matcher::TreeMatcher;
 //! use std::env;
 //! use std::error::Error;
 //! use std::fs::File;
@@ -19,7 +19,7 @@
 //!     let mut out = BufWriter::new(File::create(out_path)?);
 //!
 //!     writeln!(out, "/// My fancy matcher.")?;
-//!     IterMatcher::new("pub fn fancy_matcher", "&'static [u8]")
+//!     TreeMatcher::new("pub fn fancy_matcher", "&'static [u8]")
 //!         .add(b"one", r#"b"1""#)
 //!         .add(b"two", r#"b"2""#)
 //!         .add(b"three", r#"b"3""#)
@@ -83,7 +83,7 @@ use std::io;
 /// [memchr]: http://docs.rs/memchr
 /// [htmlize]: https://crates.io/crates/htmlize
 #[derive(Debug)]
-pub struct IterMatcher {
+pub struct TreeMatcher {
     /// The first part of the function definition to generate, e.g.
     /// `"pub fn matcher"`.
     pub fn_name: String,
@@ -100,7 +100,7 @@ pub struct IterMatcher {
     pub root: TreeNode,
 }
 
-impl IterMatcher {
+impl TreeMatcher {
     /// Create a new matcher (for use in a build script).
     ///
     /// This will generate a matcher with the the specified function name and
@@ -124,7 +124,7 @@ impl IterMatcher {
     /// Add a match.
     ///
     /// ```rust
-    /// let mut matcher = iter_matcher::IterMatcher::new("fn matcher", "u64");
+    /// let mut matcher = iter_matcher::TreeMatcher::new("fn matcher", "u64");
     /// matcher.add(b"a", "1");
     /// ```
     pub fn add<'a, K, V>(&mut self, key: K, value: V) -> &mut Self
@@ -159,11 +159,11 @@ impl IterMatcher {
     ///
     /// ```rust
     /// use bstr::ByteVec;
-    /// use iter_matcher::IterMatcher;
+    /// use iter_matcher::TreeMatcher;
     /// use pretty_assertions::assert_str_eq;
     ///
     /// let mut out = Vec::new();
-    /// let mut matcher = IterMatcher::new("fn match_bytes", "u64");
+    /// let mut matcher = TreeMatcher::new("fn match_bytes", "u64");
     /// matcher.disable_clippy(true);
     /// matcher.extend([("a".as_bytes(), "1")]);
     /// matcher.render_iter(&mut out).unwrap();
@@ -218,11 +218,11 @@ impl IterMatcher {
     ///
     /// ```rust
     /// use bstr::ByteVec;
-    /// use iter_matcher::IterMatcher;
+    /// use iter_matcher::TreeMatcher;
     /// use pretty_assertions::assert_str_eq;
     ///
     /// let mut out = Vec::new();
-    /// let mut matcher = IterMatcher::new("fn match_bytes", "u64");
+    /// let mut matcher = TreeMatcher::new("fn match_bytes", "u64");
     /// matcher.disable_clippy(true);
     /// matcher.extend([("a".as_bytes(), "1")]);
     /// matcher.render_slice(&mut out).unwrap();
@@ -262,7 +262,7 @@ impl IterMatcher {
     }
 }
 
-impl<'a, K, V> Extend<(K, V)> for IterMatcher
+impl<'a, K, V> Extend<(K, V)> for TreeMatcher
 where
     K: IntoIterator<Item = &'a u8>,
     V: Into<String>,
@@ -276,7 +276,7 @@ where
 
 /// A node in a tree matcher’s simple finite-state automaton.
 ///
-/// You probably want to use [`IterMatcher`] instead.
+/// You probably want to use [`TreeMatcher`] instead.
 #[derive(Debug, Default)]
 pub struct TreeNode {
     /// If the matcher gets to this node and `leaf` is `Some(_)`, then we found
