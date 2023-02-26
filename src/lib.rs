@@ -547,68 +547,48 @@ impl TreeNode {
             if node.branch.is_empty() {
                 // Terminal. node.leaf should be Some(_), but might not be.
                 if let Some(leaf) = &node.leaf {
-                    write!(writer, "(Some({leaf}), &slice[{index}..])")?;
+                    write!(writer, "(Some({leaf}), &slice[{index}..])")
                 } else if let Some((value, fallback)) = fallback {
-                    write!(writer, "(Some({value}), &slice[{fallback}..])")?;
+                    write!(writer, "(Some({value}), &slice[{fallback}..])")
                 } else {
-                    write!(writer, "(None, slice)")?;
+                    write!(writer, "(None, slice)")
                 }
-            } else if node.leaf.is_none() {
-                // No patterns end here: branch only.
-                render_match(node, writer, index, fallback)?;
             } else {
-                // A pattern ends here.
-                render_match(
-                    node,
+                if index == 0 {
+                    // For Clippy.
+                    writeln!(writer, "match slice.first() {{")?;
+                } else {
+                    writeln!(writer, "match slice.get({index}) {{")?;
+                }
+
+                let fallback =
+                    node.leaf.as_ref().map(|leaf| (leaf, index)).or(fallback);
+                let indent = "    ".repeat(index + 1);
+
+                for (chunk, child) in &node.branch {
+                    write!(writer, "{indent}    Some({chunk:?}) => ")?;
+                    render_child(child, writer, index + 1, fallback)?;
+                    if child.branch.is_empty() {
+                        // render_child() wrote a value, not a match block.
+                        writeln!(writer, ",")?;
+                    } else {
+                        // render_child() wrote a match block.
+                        writeln!(writer)?;
+                    }
+                }
+
+                let default = if let Some((value, index)) = fallback {
+                    format!("(Some({value}), &slice[{index}..])")
+                } else {
+                    "(None, slice)".to_string()
+                };
+
+                write!(
                     writer,
-                    index,
-                    node.leaf.as_ref().map(|leaf| (leaf, index)),
-                )?;
+                    "{indent}    _ => {default},\n\
+                    {indent}}}"
+                )
             }
-
-            Ok(())
-        }
-
-        #[inline]
-        fn render_match<W: io::Write>(
-            node: &TreeNode,
-            writer: &mut W,
-            index: usize,
-            fallback: Option<(&String, usize)>,
-        ) -> io::Result<()> {
-            let indent = "    ".repeat(index + 1);
-            if index == 0 {
-                // For Clippy.
-                writeln!(writer, "match slice.first() {{")?;
-            } else {
-                writeln!(writer, "match slice.get({index}) {{")?;
-            }
-
-            for (chunk, child) in &node.branch {
-                write!(writer, "{indent}    Some({chunk:?}) => ")?;
-                render_child(child, writer, index + 1, fallback)?;
-                if child.branch.is_empty() {
-                    // render_child() wrote a value, not a match block.
-                    writeln!(writer, ",")?;
-                } else {
-                    // render_child() wrote a match block.
-                    writeln!(writer)?;
-                }
-            }
-
-            let default = if let Some((value, fallback)) = fallback {
-                format!("(Some({value}), &slice[{fallback}..])")
-            } else {
-                "(None, slice)".to_string()
-            };
-
-            write!(
-                writer,
-                "{indent}    _ => {default},\n\
-                {indent}}}"
-            )?;
-
-            Ok(())
         }
 
         Ok(())
