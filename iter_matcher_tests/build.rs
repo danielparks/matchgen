@@ -1,4 +1,4 @@
-use iter_matcher::IterMatcher;
+use iter_matcher::TreeMatcher;
 use std::env;
 use std::error::Error;
 use std::fs::{self, File};
@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut out = BufWriter::new(File::create(out_path)?);
 
     writeln!(out, "/// Match nothing.")?;
-    iter_matcher::Node::default().render_iter(
+    iter_matcher::TreeNode::default().render_iter(
         &mut out,
         "pub fn match_nothing",
         "u8",
@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out)?;
 
     writeln!(out, "/// Match nothing (slice).")?;
-    iter_matcher::Node::default().render_slice(
+    iter_matcher::TreeNode::default().render_slice(
         &mut out,
         "pub fn match_nothing_slice",
         "u8",
@@ -26,21 +26,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out)?;
 
     writeln!(out, "/// Match nothing with Some(true).")?;
-    iter_matcher::Node::default().add(b"", "true").render_iter(
-        &mut out,
-        "pub fn match_nothing_true",
-        "bool",
-    )?;
+    iter_matcher::TreeNode::default()
+        .add(b"", "true")
+        .render_iter(&mut out, "pub fn match_nothing_true", "bool")?;
     writeln!(out)?;
 
     writeln!(out, "/// Match nothing with Some(true).")?;
-    iter_matcher::Node::default()
+    iter_matcher::TreeNode::default()
         .add(b"", "true")
         .render_slice(&mut out, "pub fn match_nothing_slice_true", "bool")?;
     writeln!(out)?;
 
     writeln!(out, "/// Match and return (bool, &[u8]).")?;
-    IterMatcher::new("pub fn slice_in_tuple", "(bool, &'static [u8])")
+    TreeMatcher::new("pub fn slice_in_tuple", "(bool, &'static [u8])")
         .add(b"aab", "(true, &[1, 1])")
         .add(b"aa", "(false, &[1, 1])")
         .add(b"ab", "(true, &[1])")
@@ -50,7 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out)?;
 
     writeln!(out, "/// Match and return (bool, &[u8]).")?;
-    IterMatcher::new("pub fn slice_in_tuple_slice", "(bool, &'static [u8])")
+    TreeMatcher::new("pub fn slice_in_tuple_slice", "(bool, &'static [u8])")
         .add(b"aab", "(true, &[1, 1])")
         .add(b"aa", "(false, &[1, 1])")
         .add(b"ab", "(true, &[1])")
@@ -60,7 +58,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out)?;
 
     writeln!(out, "/// Decode basic HTML entities.")?;
-    IterMatcher::new("pub fn basic_entity_decode", "u8")
+    TreeMatcher::new("pub fn basic_entity_decode", "u8")
         .add(b"&amp;", "b'&'")
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
@@ -70,7 +68,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out)?;
 
     writeln!(out, "/// Decode basic HTML entities.")?;
-    IterMatcher::new("pub fn basic_entity_decode_slice", "u8")
+    TreeMatcher::new("pub fn basic_entity_decode_slice", "u8")
         .add(b"&amp;", "b'&'")
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
@@ -84,7 +82,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input: serde_json::Map<String, serde_json::Value> =
         serde_json::from_slice(&input)?;
     let mut matcher =
-        IterMatcher::new("pub fn all_entity_decode", "&'static str");
+        TreeMatcher::new("pub fn all_entity_decode", "&'static str");
     matcher.disable_clippy(true);
     matcher.extend(input.iter().map(|(name, info)| {
         (

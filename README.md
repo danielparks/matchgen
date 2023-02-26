@@ -4,7 +4,7 @@
 [![Crates.io](https://img.shields.io/crates/v/iter-matcher)][crates.io]
 ![Rust version 1.60+](https://img.shields.io/badge/Rust%20version-1.60%2B-success)
 
-[`IterMatcher`] can be used from a [build script] to generate a matcher
+[`TreeMatcher`] can be used from a [build script] to generate a matcher
 function. The function accepts an iterator over bytes and returns a mapped value
 if it finds a given byte sequence at the start of the iterator.
 
@@ -33,7 +33,7 @@ To create a matcher to handle the four basic HTML entities, use a build script
 like the following:
 
 ```rust
-use iter_matcher::IterMatcher;
+use iter_matcher::TreeMatcher;
 use std::env;
 use std::error::Error;
 use std::fs::File;
@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut out = BufWriter::new(File::create(out_path)?);
 
     writeln!(out, "/// Decode basic HTML entities.")?;
-    IterMatcher::new("pub fn entity_decode", "u8")
+    TreeMatcher::new("pub fn entity_decode", "u8")
         .add(b"&amp;", "b'&'")
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
@@ -84,7 +84,7 @@ additional terms or conditions.
 
 [docs.rs]: https://docs.rs/iter-matcher/latest/iter_matcher/
 [crates.io]: https://crates.io/crates/iter-matcher
-[`IterMatcher`]: https://docs.rs/iter-matcher/latest/iter_matcher/struct.IterMatcher.html
+[`TreeMatcher`]: https://docs.rs/iter-matcher/latest/iter_matcher/struct.TreeMatcher.html
 [build script]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 [`position()`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.position
 [memchr]: http://docs.rs/memchr
