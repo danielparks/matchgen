@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut out = BufWriter::new(File::create(out_path)?);
 
     writeln!(out, "/// Match nothing.")?;
-    iter_matcher::Node::default().render_iter(
+    iter_matcher::TreeNode::default().render_iter(
         &mut out,
         "pub fn match_nothing",
         "u8",
@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out)?;
 
     writeln!(out, "/// Match nothing (slice).")?;
-    iter_matcher::Node::default().render_slice(
+    iter_matcher::TreeNode::default().render_slice(
         &mut out,
         "pub fn match_nothing_slice",
         "u8",
@@ -26,15 +26,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out)?;
 
     writeln!(out, "/// Match nothing with Some(true).")?;
-    iter_matcher::Node::default().add(b"", "true").render_iter(
-        &mut out,
-        "pub fn match_nothing_true",
-        "bool",
-    )?;
+    iter_matcher::TreeNode::default()
+        .add(b"", "true")
+        .render_iter(&mut out, "pub fn match_nothing_true", "bool")?;
     writeln!(out)?;
 
     writeln!(out, "/// Match nothing with Some(true).")?;
-    iter_matcher::Node::default()
+    iter_matcher::TreeNode::default()
         .add(b"", "true")
         .render_slice(&mut out, "pub fn match_nothing_slice_true", "bool")?;
     writeln!(out)?;

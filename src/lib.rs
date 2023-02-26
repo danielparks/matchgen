@@ -52,11 +52,11 @@
 use std::collections::HashMap;
 use std::io;
 
-/// A node in a matcher’s simple finite-state automaton.
+/// A node in a tree matcher’s simple finite-state automaton.
 ///
 /// You probably want to use [`IterMatcher`] instead.
 #[derive(Debug, Default)]
-pub struct Node {
+pub struct TreeNode {
     /// If the matcher gets to this node and `leaf` is `Some(_)`, then we found
     /// a (potential) match.
     ///
@@ -69,14 +69,14 @@ pub struct Node {
     ///
     /// If none of these characters match, then return `leaf` as the match
     /// (it might be None, indicating that nothing matches).
-    pub branch: HashMap<u8, Node>,
+    pub branch: HashMap<u8, TreeNode>,
 }
 
-impl Node {
+impl TreeNode {
     /// Add a match rooted in this node.
     ///
     /// ```rust
-    /// let mut node = iter_matcher::Node::default();
+    /// let mut node = iter_matcher::TreeNode::default();
     /// node.add(b"a", "1");
     /// ```
     pub fn add<'a, K, V>(&mut self, key: K, value: V) -> &mut Self
@@ -88,12 +88,12 @@ impl Node {
         // and thus cannot be returned.
         #[inline]
         fn internal<'a, K: Iterator<Item = &'a u8>>(
-            node: &mut Node,
+            node: &mut TreeNode,
             key: K,
             value: String,
         ) {
             let mut node = key.fold(node, |node, &c| {
-                node.branch.entry(c).or_insert_with(Node::default)
+                node.branch.entry(c).or_insert_with(TreeNode::default)
             });
             node.leaf = Some(value);
         }
@@ -116,11 +116,11 @@ impl Node {
     ///
     /// ```rust
     /// use bstr::ByteVec;
-    /// use iter_matcher::Node;
+    /// use iter_matcher::TreeNode;
     /// use pretty_assertions::assert_str_eq;
     ///
     /// let mut out = Vec::new();
-    /// Node::from_iter([("a".as_bytes(), "1")])
+    /// TreeNode::from_iter([("a".as_bytes(), "1")])
     ///     .render_iter(&mut out, "fn match_bytes", "u64")
     ///     .unwrap();
     ///
@@ -180,7 +180,7 @@ impl Node {
 
         #[inline]
         pub fn render_child<W: io::Write>(
-            node: &Node,
+            node: &TreeNode,
             writer: &mut W,
             level: usize,
             fallback: Option<&String>,
@@ -215,7 +215,7 @@ impl Node {
 
         #[inline]
         fn render_match<W: io::Write>(
-            node: &Node,
+            node: &TreeNode,
             writer: &mut W,
             level: usize,
             fallback: Option<&String>,
@@ -274,11 +274,11 @@ impl Node {
     ///
     /// ```rust
     /// use bstr::ByteVec;
-    /// use iter_matcher::Node;
+    /// use iter_matcher::TreeNode;
     /// use pretty_assertions::assert_str_eq;
     ///
     /// let mut out = Vec::new();
-    /// Node::from_iter([("a".as_bytes(), "1")])
+    /// TreeNode::from_iter([("a".as_bytes(), "1")])
     ///     .render_slice(&mut out, "fn match_bytes", "u64")
     ///     .unwrap();
     ///
@@ -317,7 +317,7 @@ impl Node {
 
         #[inline]
         pub fn render_child<W: io::Write>(
-            node: &Node,
+            node: &TreeNode,
             writer: &mut W,
             index: usize,
             fallback: Option<(&String, usize)>,
@@ -349,7 +349,7 @@ impl Node {
 
         #[inline]
         fn render_match<W: io::Write>(
-            node: &Node,
+            node: &TreeNode,
             writer: &mut W,
             index: usize,
             fallback: Option<(&String, usize)>,
@@ -393,19 +393,19 @@ impl Node {
     }
 }
 
-impl<'a, K, V> FromIterator<(K, V)> for Node
+impl<'a, K, V> FromIterator<(K, V)> for TreeNode
 where
     K: IntoIterator<Item = &'a u8>,
     V: Into<String>,
 {
-    fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> Node {
-        let mut root = Node::default();
+    fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> TreeNode {
+        let mut root = TreeNode::default();
         root.extend(iter);
         root
     }
 }
 
-impl<'a, K, V> Extend<(K, V)> for Node
+impl<'a, K, V> Extend<(K, V)> for TreeNode
 where
     K: IntoIterator<Item = &'a u8>,
     V: Into<String>,
@@ -424,7 +424,7 @@ pub fn render_iter_stub<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
     fn_name: N,
     return_type: R,
 ) -> io::Result<()> {
-    Node::default().render_iter(writer, fn_name, return_type)
+    TreeNode::default().render_iter(writer, fn_name, return_type)
 }
 
 /// Render a stub function with the correct signature for consuming a slice that
@@ -434,7 +434,7 @@ pub fn render_slice_stub<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
     fn_name: N,
     return_type: R,
 ) -> io::Result<()> {
-    Node::default().render_slice(writer, fn_name, return_type)
+    TreeNode::default().render_slice(writer, fn_name, return_type)
 }
 
 /// A matcher function builder.
@@ -482,7 +482,7 @@ pub struct IterMatcher {
     pub disable_clippy: bool,
 
     /// The root of the matcher node tree.
-    pub root: Node,
+    pub root: TreeNode,
 }
 
 impl IterMatcher {
@@ -502,7 +502,7 @@ impl IterMatcher {
             fn_name: fn_name.as_ref().to_string(),
             return_type: return_type.as_ref().to_string(),
             disable_clippy: false,
-            root: Node::default(),
+            root: TreeNode::default(),
         }
     }
 
