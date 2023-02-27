@@ -40,6 +40,8 @@ awk-in-place Cargo.toml '
 
 cargo check --quiet
 
+cargo semver-checks check-release
+
 awk-in-place CHANGELOG.md '
   /^## / && !done {
     $0 = "## Release '$version' ('$(date +%Y-%m-%d)')"
