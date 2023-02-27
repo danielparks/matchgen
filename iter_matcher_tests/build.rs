@@ -1,4 +1,4 @@
-use iter_matcher::TreeMatcher;
+use iter_matcher::{Input, TreeMatcher};
 use std::env;
 use std::error::Error;
 use std::fs::{self, File};
@@ -44,7 +44,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"ab", "(true, &[1])")
         .add(b"a", "(false, &[1])")
         .disable_clippy(true)
-        .render_iter(&mut out)?;
+        .set_input_type(Input::Iterator)
+        .render(&mut out)?;
     writeln!(out)?;
 
     writeln!(out, "/// Match and return (bool, &[u8]).")?;
@@ -54,7 +55,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"ab", "(true, &[1])")
         .add(b"a", "(false, &[1])")
         .disable_clippy(true)
-        .render_slice(&mut out)?;
+        .set_input_type(Input::Slice)
+        .render(&mut out)?;
     writeln!(out)?;
 
     writeln!(out, "/// Decode basic HTML entities.")?;
@@ -64,7 +66,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"&gt;", "b'>'")
         .add(b"&quot;", "b'\"'")
         .disable_clippy(false)
-        .render_iter(&mut out)?;
+        .set_input_type(Input::Iterator)
+        .render(&mut out)?;
     writeln!(out)?;
 
     writeln!(out, "/// Decode basic HTML entities.")?;
@@ -74,7 +77,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"&gt;", "b'>'")
         .add(b"&quot;", "b'\"'")
         .disable_clippy(false)
-        .render_slice(&mut out)?;
+        .set_input_type(Input::Slice)
+        .render(&mut out)?;
     writeln!(out)?;
 
     writeln!(out, "/// Decode all HTML entities.")?;
@@ -83,19 +87,22 @@ fn main() -> Result<(), Box<dyn Error>> {
         serde_json::from_slice(&input)?;
     let mut matcher =
         TreeMatcher::new("pub fn all_entity_decode", "&'static str");
-    matcher.disable_clippy(true);
-    matcher.extend(input.iter().map(|(name, info)| {
-        (
-            name.as_bytes(),
-            format!("{:?}", info["characters"].as_str().unwrap()),
-        )
-    }));
-    matcher.render_iter(&mut out)?;
+    matcher
+        .disable_clippy(true)
+        .set_input_type(Input::Iterator)
+        .extend(input.iter().map(|(name, info)| {
+            (
+                name.as_bytes(),
+                format!("{:?}", info["characters"].as_str().unwrap()),
+            )
+        }));
+    matcher.render(&mut out)?;
     writeln!(out)?;
 
     writeln!(out, "/// Decode all HTML entities.")?;
     matcher.fn_name = "pub fn all_entity_decode_slice".to_string();
-    matcher.render_slice(&mut out)?;
+    matcher.set_input_type(Input::Slice);
+    matcher.render(&mut out)?;
     writeln!(out)?;
 
     Ok(())
