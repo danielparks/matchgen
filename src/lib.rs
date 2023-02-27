@@ -24,7 +24,7 @@ use std::io;
 /// # Example build script
 ///
 /// ```rust
-/// use iter_matcher::TreeMatcher;
+/// use matchgen::TreeMatcher;
 /// use std::env;
 /// use std::error::Error;
 /// use std::fs::File;
@@ -105,7 +105,7 @@ impl TreeMatcher {
     /// Add a match.
     ///
     /// ```rust
-    /// let mut matcher = iter_matcher::TreeMatcher::new("fn matcher", "u64");
+    /// let mut matcher = matchgen::TreeMatcher::new("fn matcher", "u64");
     /// matcher.add(b"a", "1");
     /// ```
     pub fn add<'a, K, V>(&mut self, key: K, value: V) -> &mut Self
@@ -151,7 +151,7 @@ impl TreeMatcher {
     ///
     /// ```rust
     /// use bstr::ByteVec;
-    /// use iter_matcher::TreeMatcher;
+    /// use matchgen::TreeMatcher;
     /// use pretty_assertions::assert_str_eq;
     ///
     /// let mut out = Vec::new();
@@ -328,7 +328,7 @@ impl TreeNode {
     /// Add a match rooted in this node.
     ///
     /// ```rust
-    /// let mut node = iter_matcher::TreeNode::default();
+    /// let mut node = matchgen::TreeNode::default();
     /// node.add(b"a", "1");
     /// ```
     pub fn add<'a, K, V>(&mut self, key: K, value: V) -> &mut Self
@@ -368,7 +368,7 @@ impl TreeNode {
     ///
     /// ```rust
     /// use bstr::ByteVec;
-    /// use iter_matcher::TreeNode;
+    /// use matchgen::TreeNode;
     /// use pretty_assertions::assert_str_eq;
     ///
     /// let mut out = Vec::new();
@@ -526,7 +526,7 @@ impl TreeNode {
     ///
     /// ```rust
     /// use bstr::ByteVec;
-    /// use iter_matcher::TreeNode;
+    /// use matchgen::TreeNode;
     /// use pretty_assertions::assert_str_eq;
     ///
     /// let mut out = Vec::new();

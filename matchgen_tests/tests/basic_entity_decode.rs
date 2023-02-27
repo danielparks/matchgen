@@ -1,5 +1,5 @@
 use assert2::check;
-use iter_matcher_tests::*;
+use matchgen_tests::*;
 use paste::paste;
 
 macro_rules! test {
@@ -9,14 +9,14 @@ macro_rules! test {
             fn [<$name _iter>]() {
                 let input = $input;
                 let mut iter = input.iter();
-                check!(all_entity_decode(&mut iter) == $result);
+                check!(basic_entity_decode(&mut iter) == $result);
                 check!(iter.as_slice() == $remainder);
             }
 
             #[test]
             fn [<$name _slice>]() {
                 check!(
-                    all_entity_decode_slice($input)
+                    basic_entity_decode_slice($input)
                     == ($result, $remainder.as_slice())
                 );
             }
@@ -26,12 +26,8 @@ macro_rules! test {
 
 test!(nothing, b"", None, b"");
 test!(chars, b"abc", None, b"abc");
-test!(entity, b"&amp;", Some("&"), b"");
-test!(entity_chars, b"&amp;abc", Some("&"), b"abc");
-test!(entity_entity, b"&amp;&lt;", Some("&"), b"&lt;");
-test!(short_entity_chars, b"&lt;abc", Some("<"), b"abc");
-
-test!(timesbar, b"&timesbar;", Some("⨱"), b"");
-test!(timesb, b"&timesb;", Some("⊠"), b"");
-test!(times, b"&times;", Some("×"), b"");
-test!(times_bare_b, b"&timesb", Some("×"), b"b");
+test!(entity, b"&amp;", Some(b'&'), b"");
+test!(entity_chars, b"&amp;abc", Some(b'&'), b"abc");
+test!(entity_entity, b"&amp;&lt;", Some(b'&'), b"&lt;");
+test!(short_entity_chars, b"&lt;abc", Some(b'<'), b"abc");
+test!(invalid_entity, b"&invalid;", None, b"&invalid;");

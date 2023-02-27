@@ -1,17 +1,17 @@
 [workspace]
-members = [".", "iter_matcher_tests"]
-default-members = [".", "iter_matcher_tests"]
+members = [".", "matchgen_tests"]
+default-members = [".", "matchgen_tests"]
 
 [patch.crates-io]
-iter_matcher = { path = "." }
+matchgen = { path = "." }
 
 [package]
-name = "iter_matcher"
+name = "matchgen"
 version = "0.1.0"
-authors = ["Daniel Parks <oss-iter-matcher@demonhorse.org>"]
+authors = ["Daniel Parks <oss-matchgen@demonhorse.org>"]
 description = "Generate functions to quickly map byte string prefixes to values"
-homepage = "https://github.com/danielparks/iter-matcher"
-repository = "https://github.com/danielparks/iter-matcher"
+homepage = "https://github.com/danielparks/matchgen"
+repository = "https://github.com/danielparks/matchgen"
 readme = "README.md"
 keywords = ["codegen", "parsing", "lexing", "match"]
 categories = ["encoding", "parsing"]

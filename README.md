@@ -1,7 +1,7 @@
 # Generate functions to quickly map byte string prefixes to values
 
-[![docs.rs](https://img.shields.io/docsrs/iter-matcher)][docs.rs]
-[![Crates.io](https://img.shields.io/crates/v/iter-matcher)][crates.io]
+[![docs.rs](https://img.shields.io/docsrs/matchgen)][docs.rs]
+[![Crates.io](https://img.shields.io/crates/v/matchgen)][crates.io]
 ![Rust version 1.60+](https://img.shields.io/badge/Rust%20version-1.60%2B-success)
 
 [`TreeMatcher`] can be used from a [build script] to generate a matcher
@@ -32,7 +32,7 @@ To create a matcher to handle the four basic HTML entities, use a build script
 like the following:
 
 ```rust
-use iter_matcher::TreeMatcher;
+use matchgen::TreeMatcher;
 use std::env;
 use std::error::Error;
 use std::fs::File;
@@ -82,9 +82,9 @@ Unless you explicitly state otherwise, any contribution you submit as defined
 in the Apache 2.0 license shall be dual licensed as above, without any
 additional terms or conditions.
 
-[docs.rs]: https://docs.rs/iter-matcher/latest/iter_matcher/
-[crates.io]: https://crates.io/crates/iter-matcher
-[`TreeMatcher`]: https://docs.rs/iter-matcher/latest/iter_matcher/struct.TreeMatcher.html
+[docs.rs]: https://docs.rs/matchgen/latest/matchgen/
+[crates.io]: https://crates.io/crates/matchgen
+[`TreeMatcher`]: https://docs.rs/matchgen/latest/matchgen/struct.TreeMatcher.html
 [build script]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 [`iter().position()`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.position
 [memchr]: http://docs.rs/memchr
