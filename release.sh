@@ -40,8 +40,6 @@ awk-in-place Cargo.toml '
 
 cargo check --quiet
 
-cargo semver-checks check-release
-
 awk-in-place CHANGELOG.md '
   /^## / && !done {
     $0 = "## Release '$version' ('$(date +%Y-%m-%d)')"
@@ -76,7 +74,7 @@ cat "$changelog"
 echo
 confirm 'Release notes displayed above. Continue?'
 
-cargo publish
+cargo publish -p matchgen
 
 git tag --sign --file "$changelog" --cleanup=verbatim "v${version}"
 git push --tags origin main
