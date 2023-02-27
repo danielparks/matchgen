@@ -1,45 +1,8 @@
 //! [`TreeMatcher`] can be used from a [build script] to generate a function
-//! that accepts an iterator over bytes and returns a mapped value if it finds a
-//! given byte sequence at the start of the iterator.
+//! that accepts bytes as an input and returns a mapped value if it finds a
+//! given byte sequence at the start of the input.
 //!
-//! # Example build script
-//!
-//! ```rust
-//! use iter_matcher::TreeMatcher;
-//! use std::env;
-//! use std::error::Error;
-//! use std::fs::File;
-//! use std::io::{BufWriter, Read, Write};
-//! use std::path::Path;
-//!
-//! fn main() -> Result<(), Box<dyn Error>> {
-//!     # let tmp_dir = temp_dir::TempDir::new().unwrap();
-//!     # env::set_var("OUT_DIR", tmp_dir.path());
-//!     let out_path = Path::new(&env::var("OUT_DIR")?).join("matcher.rs");
-//!     let mut out = BufWriter::new(File::create(out_path)?);
-//!
-//!     writeln!(out, "/// My fancy matcher.")?;
-//!     TreeMatcher::new("pub fn fancy_matcher", "&'static [u8]")
-//!         .add(b"one", r#"b"1""#)
-//!         .add(b"two", r#"b"2""#)
-//!         .add(b"three", r#"b"3""#)
-//!         .render_iter(&mut out)?;
-//!
-//!     Ok(())
-//! }
-//! ```
-//!
-//! To use the matcher:
-//!
-//! ```rust,ignore
-//! include!(concat!(env!("OUT_DIR"), "/matcher.rs"));
-//!
-//! fn main() {
-//!     let mut iter = b"one two three".iter();
-//!     assert!(fancy_matcher(&mut iter) == Some(b"1"));
-//!     assert!(iter.as_slice() == b" two three");
-//! }
-//! ```
+//! See [`TreeMatcher`] for example usage.
 //!
 //! # Minimum supported Rust version
 //!
@@ -52,37 +15,52 @@
 use std::collections::HashMap;
 use std::io;
 
-/// A matcher function builder.
+/// Build a function with nested match statements to quickly map byte sequences
+/// to values.
 ///
-/// The generated function will accept an iterator over bytes and will return a
-/// match if it finds a given byte sequence at the start of the iterator.
+/// See the variants of [`Input`] for the details about what the generated
+/// function will accept and what it returns.
 ///
-/// For example, suppose you generate a [matcher for all HTML entities][htmlize]
-/// called `entity_matcher()`:
+/// # Example build script
 ///
-/// ```rust,ignore
-/// let mut iter = b"&times;XYZ".iter();
-/// assert!(entity_matcher(&mut iter) == Some("×"));
-/// assert!(iter.next() == Some(b'X'));
+/// ```rust
+/// use iter_matcher::TreeMatcher;
+/// use std::env;
+/// use std::error::Error;
+/// use std::fs::File;
+/// use std::io::{BufWriter, Read, Write};
+/// use std::path::Path;
+///
+/// fn main() -> Result<(), Box<dyn Error>> {
+///     # let tmp_dir = temp_dir::TempDir::new().unwrap();
+///     # env::set_var("OUT_DIR", tmp_dir.path());
+///     let out_path = Path::new(&env::var("OUT_DIR")?).join("matcher.rs");
+///     let mut out = BufWriter::new(File::create(out_path)?);
+///
+///     writeln!(out, "/// My fancy matcher.")?;
+///     TreeMatcher::new("pub fn fancy_matcher", "&'static [u8]")
+///         .add(b"one", r#"b"1""#)
+///         .add(b"two", r#"b"2""#)
+///         .add(b"three", r#"b"3""#)
+///         .render(&mut out)?;
+///
+///     Ok(())
+/// }
 /// ```
 ///
-///   * **The prefixes it checks do not all have to be the same length.** The
-///     matcher will clone the iterator if it needs to look ahead, so when the
-///     matcher returns the iterator will only have consumed what was matched.
-///   * **If more than one prefix matches, it will return the longest one.**
-///   * **If nothing matches, the iterator will not be advanced.** You may want
-///     to call `iterator.next()` if the matcher returns `None`.
-///   * **It only checks the start of the iterator.** Often you will want to use
-///     [`position()`] or the [memchr crate][memchr] to find the start of a
-///     potential match.
+/// To use the matcher:
 ///
-/// See the [crate] documentation for an example of how to use this from a build
-/// script.
+/// ```rust,ignore
+/// include!(concat!(env!("OUT_DIR"), "/matcher.rs"));
 ///
-/// [`position()`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.position
-/// [memchr]: http://docs.rs/memchr
-/// [htmlize]: https://crates.io/crates/htmlize
-#[derive(Debug)]
+/// fn main() {
+///     assert_eq!(
+///         fancy_matcher(b"one two three"),
+///         (Some(b"1"), b" two three".as_slice()),
+///     );
+/// }
+/// ```
+#[derive(Clone, Debug)]
 pub struct TreeMatcher {
     /// The first part of the function definition to generate, e.g.
     /// `"pub fn matcher"`.
@@ -90,6 +68,9 @@ pub struct TreeMatcher {
 
     /// The return type (will be wrapped in [`Option`]), e.g. `"&'static str"`.
     pub return_type: String,
+
+    /// The type of input to accept. Defaults to [`Input::Slice`].
+    pub input_type: Input,
 
     /// Whether or not to prevent Clippy from evaluating the generated code.
     ///
@@ -105,10 +86,9 @@ impl TreeMatcher {
     ///
     /// This will generate a matcher with the the specified function name and
     /// return type. You can add matches to it with [`Self::add()`] and/or
-    /// [`Self::extend()`], then turn it into code with
-    /// [`Self::render_slice()`].
+    /// [`Self::extend()`], then turn it into code with [`Self::render()`].
     ///
-    /// See the [crate documentation][crate] for a complete example.
+    /// See the [struct documentation][TreeMatcher] for a complete example.
     pub fn new<N: AsRef<str>, R: AsRef<str>>(
         fn_name: N,
         return_type: R,
@@ -116,6 +96,7 @@ impl TreeMatcher {
         Self {
             fn_name: fn_name.as_ref().to_string(),
             return_type: return_type.as_ref().to_string(),
+            input_type: Input::Slice,
             disable_clippy: false,
             root: TreeNode::default(),
         }
@@ -153,63 +134,15 @@ impl TreeMatcher {
         self
     }
 
-    /// Render the matcher into Rust code.
+    /// Set what kind of input the matcher should accept.
     ///
-    /// ### Example
+    /// This can be either:
     ///
-    /// ```rust
-    /// use bstr::ByteVec;
-    /// use iter_matcher::TreeMatcher;
-    /// use pretty_assertions::assert_str_eq;
-    ///
-    /// let mut out = Vec::new();
-    /// let mut matcher = TreeMatcher::new("fn match_bytes", "u64");
-    /// matcher.disable_clippy(true);
-    /// matcher.extend([("a".as_bytes(), "1")]);
-    /// matcher.render_iter(&mut out).unwrap();
-    ///
-    /// assert_str_eq!(
-    ///     r#"#[cfg(not(feature = "cargo-clippy"))]
-    /// fn match_bytes<'a, I>(iter: &mut I) -> Option<u64>
-    /// where
-    ///     I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,
-    /// {
-    ///     let fallback_iter = iter.clone();
-    ///     match iter.next() {
-    ///         Some(97) => Some(1),
-    ///         _ => {
-    ///             *iter = fallback_iter;
-    ///             None
-    ///         }
-    ///     }
-    /// }
-    ///
-    /// #[cfg(feature = "cargo-clippy")]
-    /// fn match_bytes<'a, I>(_iter: &mut I) -> Option<u64>
-    /// where
-    ///     I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,
-    /// {
-    ///     None
-    /// }
-    /// "#,
-    ///     out.into_string().unwrap(),
-    /// );
-    /// ```
-    pub fn render_iter<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
-        if self.disable_clippy {
-            writeln!(writer, "#[cfg(not(feature = \"cargo-clippy\"))]")?;
-        }
-
-        self.root
-            .render_iter(writer, &self.fn_name, &self.return_type)?;
-
-        if self.disable_clippy {
-            writeln!(writer)?;
-            writeln!(writer, "#[cfg(feature = \"cargo-clippy\")]")?;
-            render_iter_stub(writer, &self.fn_name, &self.return_type)?;
-        }
-
-        Ok(())
+    ///   * [`Input::Slice`] to accept `&[u8]`
+    ///   * [`Input::Iterator`] to accept `core::iter::Iterator<Item = &'a u8>`
+    pub fn set_input_type(&mut self, input_type: Input) -> &mut Self {
+        self.input_type = input_type;
+        self
     }
 
     /// Render the matcher into Rust code.
@@ -225,7 +158,7 @@ impl TreeMatcher {
     /// let mut matcher = TreeMatcher::new("fn match_bytes", "u64");
     /// matcher.disable_clippy(true);
     /// matcher.extend([("a".as_bytes(), "1")]);
-    /// matcher.render_slice(&mut out).unwrap();
+    /// matcher.render(&mut out).unwrap();
     ///
     /// assert_str_eq!(
     ///     r#"#[cfg(not(feature = "cargo-clippy"))]
@@ -244,21 +177,50 @@ impl TreeMatcher {
     ///     out.into_string().unwrap(),
     /// );
     /// ```
-    pub fn render_slice<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+    pub fn render<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         if self.disable_clippy {
             writeln!(writer, "#[cfg(not(feature = \"cargo-clippy\"))]")?;
         }
 
-        self.root
-            .render_slice(writer, &self.fn_name, &self.return_type)?;
+        self.render_func(writer)?;
 
         if self.disable_clippy {
             writeln!(writer)?;
             writeln!(writer, "#[cfg(feature = \"cargo-clippy\")]")?;
-            render_slice_stub(writer, &self.fn_name, &self.return_type)?;
+            self.render_stub(writer)?;
         }
 
         Ok(())
+    }
+
+    /// Render the function that does the matching.
+    fn render_func<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+        match self.input_type {
+            Input::Slice => {
+                self.root
+                    .render_slice(writer, &self.fn_name, &self.return_type)
+            }
+            Input::Iterator => {
+                self.root
+                    .render_iter(writer, &self.fn_name, &self.return_type)
+            }
+        }
+    }
+
+    /// Render a stub that does nothing.
+    fn render_stub<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+        match self.input_type {
+            Input::Slice => TreeNode::default().render_slice(
+                writer,
+                &self.fn_name,
+                &self.return_type,
+            ),
+            Input::Iterator => TreeNode::default().render_iter(
+                writer,
+                &self.fn_name,
+                &self.return_type,
+            ),
+        }
     }
 }
 
@@ -274,10 +236,78 @@ where
     }
 }
 
+/// What kind of input the matcher should accept: a slice or an iterator.
+#[derive(Clone, Copy, Debug)]
+pub enum Input {
+    /// Accept a slice of bytes.
+    ///
+    /// The generated function will accept a slice of bytes (`&[u8]`) and will
+    /// return a tuple containing the match, if any, and the remainder of the
+    /// slice, i.e. `(Option<{return_type}>, &[u8])`.
+    ///
+    /// For example, suppose you generate a [matcher for all HTML
+    /// entities][htmlize] called `entity_matcher()`:
+    ///
+    /// ```rust,ignore
+    /// assert!(entity_matcher(b"&times;XY") == (Some("×"), b"XY".as_slice()));
+    /// ```
+    ///
+    ///   * The prefixes it checks do not all have to be the same length.
+    ///   * If more than one prefix matches, it will return the longest one.
+    ///   * If nothing matches, it will return `(None, &input)`.
+    ///
+    /// Since the matchers only check the start of the input, you will want to
+    /// use [`iter().position()`] or the [memchr crate][memchr] to find the
+    /// start of a potential match.
+    ///
+    /// [`iter().position()`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.position
+    /// [memchr]: http://docs.rs/memchr
+    /// [htmlize]: https://crates.io/crates/htmlize
+    Slice,
+
+    /// Accept an iterator over bytes.
+    ///
+    /// The generated function will accept an iterator over bytes
+    /// (`core::iter::Iterator<Item = &'a u8>`) and will return a match if it
+    /// finds a given byte sequence at the start of the iterator. It will update
+    /// the iterator to move past the match (and no farther).
+    ///
+    /// For example, suppose you generate a [matcher for all HTML
+    /// entities][htmlize] called `entity_matcher()`:
+    ///
+    /// ```rust,ignore
+    /// let mut iter = b"&times;XY".iter();
+    /// assert!(entity_matcher(&mut iter) == Some("×"));
+    /// assert!(iter.next() == Some(b'X'));
+    /// ```
+    ///
+    ///   * **The prefixes it checks do not all have to be the same length.**
+    ///     The matcher will clone the iterator if it needs to look ahead, so
+    ///     when the matcher returns the iterator will only have consumed what
+    ///     was matched.
+    ///   * **If more than one prefix matches, it will return the longest one.**
+    ///   * **If nothing matches, the iterator will not be advanced.** You may
+    ///     want to call `iterator.next()` if the matcher returns `None`.
+    ///   * **It only checks the start of the iterator.** Often you will want to
+    ///     use [`position()`] or the [memchr crate][memchr] to find the start
+    ///     of a potential match.
+    ///
+    /// [`position()`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.position
+    /// [memchr]: http://docs.rs/memchr
+    /// [htmlize]: https://crates.io/crates/htmlize
+    Iterator,
+}
+
+impl Default for Input {
+    fn default() -> Self {
+        Self::Slice
+    }
+}
+
 /// A node in a tree matcher’s simple finite-state automaton.
 ///
 /// You probably want to use [`TreeMatcher`] instead.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct TreeNode {
     /// If the matcher gets to this node and `leaf` is `Some(_)`, then we found
     /// a (potential) match.
@@ -617,24 +647,4 @@ where
             self.add(key, value);
         });
     }
-}
-
-/// Render a stub function with the correct signature for consuming an iterator
-/// that does nothing.
-pub fn render_iter_stub<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
-    writer: &mut W,
-    fn_name: N,
-    return_type: R,
-) -> io::Result<()> {
-    TreeNode::default().render_iter(writer, fn_name, return_type)
-}
-
-/// Render a stub function with the correct signature for consuming a slice that
-/// does nothing.
-pub fn render_slice_stub<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
-    writer: &mut W,
-    fn_name: N,
-    return_type: R,
-) -> io::Result<()> {
-    TreeNode::default().render_slice(writer, fn_name, return_type)
 }

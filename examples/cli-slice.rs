@@ -1,4 +1,4 @@
-use iter_matcher::TreeMatcher;
+use iter_matcher::{Input, TreeMatcher};
 use std::env;
 use std::io;
 use std::process::exit;
@@ -13,5 +13,6 @@ fn main() {
         }
         matcher.add(key_value[0].as_bytes(), format!("{:?}", key_value[1]));
     });
-    matcher.render_slice(&mut io::stdout()).unwrap();
+    matcher.set_input_type(Input::Slice);
+    matcher.render(&mut io::stdout()).unwrap();
 }

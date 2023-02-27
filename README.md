@@ -23,6 +23,9 @@ Since the matchers only check the start of the input, you will want to use
 [`iter().position()`] or the [memchr crate][memchr] to find the start of a
 potential match.
 
+It can also be configured to accept an iterator over bytes as input instead of
+a slice.
+
 ## Simple example
 
 To create a matcher to handle the four basic HTML entities, use a build script
@@ -46,7 +49,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
         .add(b"&quot;", "b'\"'")
-        .render_slice(&mut out)?;
+        .render(&mut out)?;
 
     Ok(())
 }
