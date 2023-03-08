@@ -1,4 +1,4 @@
-use matchgen::{Input, TreeMatcher};
+use matchgen::{FlatMatcher, Input, TreeMatcher};
 use std::env;
 use std::error::Error;
 use std::fs::{self, File};
@@ -104,6 +104,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out, "/// Decode all HTML entities.")?;
     matcher.fn_name = "pub fn all_entity_decode_slice".to_string();
     matcher.set_input_type(Input::Slice);
+    matcher.render(&mut out)?;
+    writeln!(out)?;
+
+    writeln!(out, "/// Decode all HTML entities.")?;
+    let input = fs::read("html-entities.json")?;
+    let input: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_slice(&input)?;
+    let mut matcher =
+        FlatMatcher::new("pub fn all_entity_decode_flat", "&'static str");
+    matcher
+        .disable_clippy(true)
+        .extend(input.iter().map(|(name, info)| {
+            (
+                name.as_bytes(),
+                format!("{:?}", info["characters"].as_str().unwrap()),
+            )
+        }));
     matcher.render(&mut out)?;
     writeln!(out)?;
 
