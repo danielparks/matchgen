@@ -15,8 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - run: cargo build --tests
-      - run: cargo test --all-features
+      - run: rustup show -v
+      - run: cargo build --tests -vv
+      - run: cargo test --all-features -vv
 
   fmt:
     name: cargo fmt
