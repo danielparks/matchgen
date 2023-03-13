@@ -20,6 +20,14 @@ macro_rules! test {
                     == ($result, $remainder.as_slice())
                 );
             }
+
+            #[test]
+            fn [<$name _flat>]() {
+                check!(
+                    all_entity_decode_slice($input)
+                    == ($result, $remainder.as_slice())
+                );
+            }
         }
     };
 }
