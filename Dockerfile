@@ -20,6 +20,12 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
 
 ENV PATH=/root/.cargo/bin:$PATH
 
+# Prevent missing files (https://github.com/danielparks/matchgen/issues/14).
+# This won’t affect iai output since it puts stuff in matchgen_tests/target. Of
+# course, it might be affected by the bug, but at least that would provide more
+# data about the problem.
+ENV CARGO_TARGET_DIR=/root/target
+
 COPY . /work
 WORKDIR /work
 RUN cargo build --benches --profile bench --all-features
