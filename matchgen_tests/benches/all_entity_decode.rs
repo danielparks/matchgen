@@ -25,6 +25,11 @@ macro_rules! benchmark {
             input,
             |b, input| b.iter(|| all_entity_decode_slice(input)),
         );
+        $group.bench_with_input(
+            BenchmarkId::new("all_entity_decode_flat", $test_name),
+            input,
+            |b, input| b.iter(|| all_entity_decode_flat(input)),
+        );
     }};
 }
 
