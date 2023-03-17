@@ -28,10 +28,10 @@ paste = "1.0.11"
 bench = false
 
 [[bench]]
-name = "all_entity_decode_iai"
+name = "most_entity_decode_iai"
 harness = false
 required-features = ["iai"]
 
 [[bench]]
-name = "all_entity_decode"
+name = "most_entity_decode"
 harness = false

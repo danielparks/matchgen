@@ -83,12 +83,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         .render(&mut out)?;
     writeln!(out)?;
 
-    writeln!(out, "/// Decode all HTML entities.")?;
-    let input = fs::read("html-entities.json")?;
+    writeln!(out, "/// Decode most HTML entities.")?;
+    let input = fs::read("most-html-entities.json")?;
     let input: serde_json::Map<String, serde_json::Value> =
         serde_json::from_slice(&input)?;
     let mut matcher =
-        TreeMatcher::new("pub fn all_entity_decode", "&'static str");
+        TreeMatcher::new("pub fn most_entity_decode", "&'static str");
     matcher
         .disable_clippy(true)
         .set_input_type(Input::Iterator)
@@ -101,8 +101,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     matcher.render(&mut out)?;
     writeln!(out)?;
 
-    writeln!(out, "/// Decode all HTML entities.")?;
-    matcher.fn_name = "pub fn all_entity_decode_slice".to_string();
+    writeln!(out, "/// Decode most HTML entities.")?;
+    matcher.fn_name = "pub fn most_entity_decode_slice".to_string();
     matcher.set_input_type(Input::Slice);
     matcher.render(&mut out)?;
     writeln!(out)?;
