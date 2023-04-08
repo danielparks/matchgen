@@ -68,6 +68,14 @@ fn main() {
 }
 ```
 
+## Development status
+
+This is potentially stable. I’m letting it bake a while to see if I come up with
+new features or better ways to accomplish the same thing before I release
+version 1.0.
+
+I am open to [suggestions][issues].
+
 ## License
 
 This project dual-licensed under the Apache 2 and MIT licenses. You may choose
@@ -89,3 +97,4 @@ additional terms or conditions.
 [`iter().position()`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.position
 [memchr]: http://docs.rs/memchr
 [htmlize]: https://crates.io/crates/htmlize
+[issues]: https://github.com/danielparks/matchgen/issues
