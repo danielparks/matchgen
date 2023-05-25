@@ -4,6 +4,12 @@
 //! `tests/` and `benches/` for the actual test code.
 
 #![forbid(unsafe_code)]
+#![warn(clippy::pedantic)]
+// Not currently compatible with clippy shim.
+#![allow(clippy::must_use_candidate)]
+
+// Not currently compatible with clippy shim.
+// #![warn(missing_docs)]
 
 // Include generated code.
 include!(concat!(env!("OUT_DIR"), "/test-matchers.rs"));
