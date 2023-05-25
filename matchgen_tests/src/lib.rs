@@ -5,8 +5,6 @@
 
 #![forbid(unsafe_code)]
 #![warn(clippy::pedantic)]
-// Not currently compatible with clippy shim.
-#![allow(clippy::must_use_candidate)]
 
 // Not currently compatible with clippy shim.
 // #![warn(missing_docs)]

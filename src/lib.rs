@@ -75,10 +75,16 @@ pub struct TreeMatcher {
     /// The type of input to accept. Defaults to [`Input::Slice`].
     pub input_type: Input,
 
-    /// Whether or not to prevent Clippy from evaluating the generated code.
+    /// Whether to prevent Clippy from evaluating the generated code. Defaults
+    /// to `false`.
     ///
     /// See [`Self::disable_clippy()`].
     pub disable_clippy: bool,
+
+    /// Whether to mark the function with [`#[must_use]`]. Defaults to `true`.
+    ///
+    /// [`#[must_use]`]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-must_use-attribute
+    pub must_use: bool,
 
     /// The root of the matcher node tree.
     pub root: TreeNode,
@@ -101,6 +107,7 @@ impl TreeMatcher {
             return_type: return_type.as_ref().to_string(),
             input_type: Input::Slice,
             disable_clippy: false,
+            must_use: true,
             root: TreeNode::default(),
         }
     }
@@ -137,6 +144,38 @@ impl TreeMatcher {
         self
     }
 
+    /// Set whether or not to mark the generated function with [`#[must_use]`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use bstr::ByteVec;
+    /// use matchgen::TreeMatcher;
+    /// use pretty_assertions::assert_str_eq;
+    ///
+    /// let mut out = Vec::new();
+    /// let mut matcher = TreeMatcher::new("fn match_bytes", "u64");
+    /// matcher.set_must_use(false);
+    /// matcher.extend([("a".as_bytes(), "1")]);
+    /// matcher.render(&mut out).unwrap();
+    ///
+    /// assert_str_eq!(
+    ///     r#"#[allow(clippy::single_match_else)]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     match slice.first() {
+    ///         Some(97) => (Some(1), &slice[1..]),
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    pub fn set_must_use(&mut self, must_use: bool) -> &mut Self {
+        self.must_use = must_use;
+        self
+    }
+
     /// Set what kind of input the matcher should accept.
     ///
     /// This can be either:
@@ -165,6 +204,7 @@ impl TreeMatcher {
     ///
     /// assert_str_eq!(
     ///     r#"#[cfg(not(feature = "cargo-clippy"))]
+    /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice.first() {
     ///         Some(97) => (Some(1), &slice[1..]),
@@ -173,6 +213,7 @@ impl TreeMatcher {
     /// }
     ///
     /// #[cfg(feature = "cargo-clippy")]
+    /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     (None, slice)
     /// }
@@ -210,6 +251,10 @@ impl TreeMatcher {
             writeln!(writer, "#[allow(clippy::single_match_else)]")?;
         }
 
+        if self.must_use {
+            writeln!(writer, "#[must_use]")?;
+        }
+
         match self.input_type {
             Input::Slice => {
                 self.root
@@ -228,6 +273,10 @@ impl TreeMatcher {
     ///
     /// This can return [`io::Error`] if there is a problem writing to `writer`.
     fn render_stub<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+        if self.must_use {
+            writeln!(writer, "#[must_use]")?;
+        }
+
         match self.input_type {
             Input::Slice => TreeNode::default().render_slice(
                 writer,
