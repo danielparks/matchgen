@@ -11,6 +11,9 @@
 //! [build script]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 
 #![forbid(unsafe_code)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::let_underscore_untyped, clippy::map_unwrap_or)]
+#![warn(missing_docs)]
 
 use std::collections::HashMap;
 use std::io;
@@ -147,7 +150,7 @@ impl TreeMatcher {
 
     /// Render the matcher into Rust code.
     ///
-    /// ### Example
+    /// # Example
     ///
     /// ```rust
     /// use bstr::ByteVec;
@@ -177,6 +180,10 @@ impl TreeMatcher {
     ///     out.into_string().unwrap(),
     /// );
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing to `writer`.
     pub fn render<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         if self.disable_clippy {
             writeln!(writer, "#[cfg(not(feature = \"cargo-clippy\"))]")?;
@@ -194,7 +201,15 @@ impl TreeMatcher {
     }
 
     /// Render the function that does the matching.
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing to `writer`.
     fn render_func<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+        if !self.disable_clippy {
+            writeln!(writer, "#[allow(clippy::single_match_else)]")?;
+        }
+
         match self.input_type {
             Input::Slice => {
                 self.root
@@ -208,6 +223,10 @@ impl TreeMatcher {
     }
 
     /// Render a stub that does nothing.
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing to `writer`.
     fn render_stub<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         match self.input_type {
             Input::Slice => TreeNode::default().render_slice(
@@ -364,7 +383,7 @@ impl TreeNode {
     ///   3. The return type (will be wrapped in [`Option`]), e.g.
     ///      `"&'static str"`.
     ///
-    /// ### Example
+    /// # Example
     ///
     /// ```rust
     /// use bstr::ByteVec;
@@ -395,6 +414,11 @@ impl TreeNode {
     ///     out.into_string().unwrap(),
     /// );
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing to `writer`.
+    #[allow(clippy::items_after_statements)]
     pub fn render_iter<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
         &self,
         writer: &mut W,
@@ -431,7 +455,7 @@ impl TreeNode {
         // stack. Transform this to an iterative algorithm.
 
         #[inline]
-        pub fn render_child<W: io::Write>(
+        fn render_child<W: io::Write>(
             node: &TreeNode,
             writer: &mut W,
             level: usize,
@@ -522,7 +546,7 @@ impl TreeNode {
     ///   3. The return type (will be wrapped in [`Option`] and a tuple), e.g.
     ///      `"&'static str"`.
     ///
-    /// ### Example
+    /// # Example
     ///
     /// ```rust
     /// use bstr::ByteVec;
@@ -546,6 +570,11 @@ impl TreeNode {
     ///     out.into_string().unwrap(),
     /// );
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing to `writer`.
+    #[allow(clippy::items_after_statements)]
     pub fn render_slice<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
         &self,
         writer: &mut W,
@@ -568,7 +597,7 @@ impl TreeNode {
         // stack. Transform this to an iterative algorithm.
 
         #[inline]
-        pub fn render_child<W: io::Write>(
+        fn render_child<W: io::Write>(
             node: &TreeNode,
             writer: &mut W,
             index: usize,

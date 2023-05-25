@@ -1,3 +1,7 @@
+#![forbid(unsafe_code)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::let_underscore_untyped, clippy::map_unwrap_or)]
+
 use matchgen::{Input, TreeMatcher};
 use std::env;
 use std::error::Error;
