@@ -161,7 +161,7 @@ impl TreeMatcher {
     /// matcher.render(&mut out).unwrap();
     ///
     /// assert_str_eq!(
-    ///     r#"#[allow(clippy::single_match_else)]
+    ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice.first() {
     ///         Some(97) => (Some(1), &slice[1..]),
@@ -249,7 +249,10 @@ impl TreeMatcher {
     /// This can return [`io::Error`] if there is a problem writing to `writer`.
     fn render_func<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         if !self.disable_clippy {
-            writeln!(writer, "#[allow(clippy::single_match_else)]")?;
+            writeln!(
+                writer,
+                "#[allow(clippy::too_many_lines, clippy::single_match_else)]"
+            )?;
         }
 
         if self.must_use {
