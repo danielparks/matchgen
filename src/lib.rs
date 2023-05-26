@@ -156,7 +156,7 @@ impl TreeMatcher {
     ///
     /// let mut out = Vec::new();
     /// let mut matcher = TreeMatcher::new("fn match_bytes", "u64");
-    /// matcher.set_must_use(false);
+    /// matcher.must_use(false);
     /// matcher.extend([("a".as_bytes(), "1")]);
     /// matcher.render(&mut out).unwrap();
     ///
@@ -172,7 +172,7 @@ impl TreeMatcher {
     ///     out.into_string().unwrap(),
     /// );
     /// ```
-    pub fn set_must_use(&mut self, must_use: bool) -> &mut Self {
+    pub fn must_use(&mut self, must_use: bool) -> &mut Self {
         self.must_use = must_use;
         self
     }
@@ -183,7 +183,7 @@ impl TreeMatcher {
     ///
     ///   * [`Input::Slice`] to accept `&[u8]`
     ///   * [`Input::Iterator`] to accept `core::iter::Iterator<Item = &'a u8>`
-    pub fn set_input_type(&mut self, input_type: Input) -> &mut Self {
+    pub fn input_type(&mut self, input_type: Input) -> &mut Self {
         self.input_type = input_type;
         self
     }

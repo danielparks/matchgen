@@ -13,6 +13,6 @@ fn main() {
         }
         matcher.add(key_value[0].as_bytes(), format!("{:?}", key_value[1]));
     });
-    matcher.set_input_type(Input::Iterator);
+    matcher.input_type(Input::Iterator);
     matcher.render(&mut io::stdout()).unwrap();
 }
