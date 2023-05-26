@@ -81,9 +81,10 @@ pub struct TreeMatcher {
     /// See [`Self::disable_clippy()`].
     pub disable_clippy: bool,
 
-    /// Whether to mark the function with [`#[must_use]`]. Defaults to `true`.
+    /// Whether to mark the function with [`#[must_use]`][must_use]. Defaults to
+    /// `true`.
     ///
-    /// [`#[must_use]`]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-must_use-attribute
+    /// [must_use]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-must_use-attribute
     pub must_use: bool,
 
     /// The root of the matcher node tree.
