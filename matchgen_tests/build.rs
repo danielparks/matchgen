@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"ab", "(true, &[1])")
         .add(b"a", "(false, &[1])")
         .disable_clippy(true)
-        .set_input_type(Input::Iterator)
+        .input_type(Input::Iterator)
         .render(&mut out)?;
     writeln!(out)?;
 
@@ -65,7 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"ab", "(true, &[1])")
         .add(b"a", "(false, &[1])")
         .disable_clippy(true)
-        .set_input_type(Input::Slice)
+        .input_type(Input::Slice)
         .render(&mut out)?;
     writeln!(out)?;
 
@@ -76,7 +76,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"&gt;", "b'>'")
         .add(b"&quot;", "b'\"'")
         .disable_clippy(false)
-        .set_input_type(Input::Iterator)
+        .input_type(Input::Iterator)
         .render(&mut out)?;
     writeln!(out)?;
 
@@ -87,7 +87,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"&gt;", "b'>'")
         .add(b"&quot;", "b'\"'")
         .disable_clippy(false)
-        .set_input_type(Input::Slice)
+        .input_type(Input::Slice)
         .render(&mut out)?;
     writeln!(out)?;
 
@@ -99,7 +99,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         TreeMatcher::new("pub fn most_entity_decode", "&'static str");
     matcher
         .disable_clippy(true)
-        .set_input_type(Input::Iterator)
+        .input_type(Input::Iterator)
         .extend(input.iter().map(|(name, info)| {
             (
                 name.as_bytes(),
@@ -111,7 +111,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     writeln!(out, "/// Decode most HTML entities.")?;
     matcher.fn_name = "pub fn most_entity_decode_slice".to_string();
-    matcher.set_input_type(Input::Slice);
+    matcher.input_type(Input::Slice);
     matcher.render(&mut out)?;
     writeln!(out)?;
 

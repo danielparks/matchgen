@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## main branch
 
+### Breaking changes
+
+* Renamed `TreeMatcher::set_input_type()` to `TreeMatcher::input_type()`.
+
+### Changes
+
 * Made sure generated functions pass [Clippy]’s [pedantic lint group]:
   * Changed to add [`#[must_use]`] to generated functions by default.
   * Added trivial documentation about what errors are returned by a few
