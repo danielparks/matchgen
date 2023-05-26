@@ -5,9 +5,7 @@
 
 #![forbid(unsafe_code)]
 #![warn(clippy::pedantic)]
-
-// Not currently compatible with clippy shim.
-// #![warn(missing_docs)]
+#![warn(missing_docs)]
 
 // Include generated code.
 include!(concat!(env!("OUT_DIR"), "/test-matchers.rs"));

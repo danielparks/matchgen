@@ -16,6 +16,7 @@
 #![warn(missing_docs)]
 
 use std::collections::HashMap;
+use std::fmt;
 use std::io;
 
 /// Build a function with nested match statements to quickly map byte sequences
@@ -87,6 +88,11 @@ pub struct TreeMatcher {
     /// [must_use]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-must_use-attribute
     pub must_use: bool,
 
+    /// Doc attribute, e.g. `#[doc = "Documenation"]`, to add to the function.
+    ///
+    /// Should not have a trailing newline.
+    pub doc: Option<String>,
+
     /// The root of the matcher node tree.
     pub root: TreeNode,
 }
@@ -109,6 +115,7 @@ impl TreeMatcher {
             input_type: Input::Slice,
             disable_clippy: false,
             must_use: true,
+            doc: None,
             root: TreeNode::default(),
         }
     }
@@ -188,6 +195,51 @@ impl TreeMatcher {
         self
     }
 
+    /// Set documentation for the matcher.
+    ///
+    /// The `doc` argument, when unwrapped, should produce a Rust string literal
+    /// when rendered with [`fmt::Debug`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use bstr::ByteVec;
+    /// use matchgen::TreeMatcher;
+    /// use pretty_assertions::assert_str_eq;
+    ///
+    /// let mut out = Vec::new();
+    /// TreeMatcher::new("fn match_bytes", "u64")
+    ///     .doc(Some(
+    ///         "Match the first bytes of a slice.
+    ///
+    ///         Matches only the string `\"a\"` and returns `1`."
+    ///     ))
+    ///     .add("a".as_bytes(), "1")
+    ///     .render(&mut out)
+    ///     .unwrap();
+    ///
+    /// assert_str_eq!(
+    ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
+    /// #[doc = "Match the first bytes of a slice.\n\n        Matches only the string `\"a\"` and returns `1`."]
+    /// #[must_use]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     match slice.first() {
+    ///         Some(97) => (Some(1), &slice[1..]),
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    pub fn doc<S>(&mut self, doc: Option<S>) -> &mut Self
+    where
+        S: fmt::Debug,
+    {
+        self.doc = doc.map(|s| format!("#[doc = {s:?}]"));
+        self
+    }
+
     /// Render the matcher into Rust code.
     ///
     /// # Example
@@ -199,9 +251,11 @@ impl TreeMatcher {
     ///
     /// let mut out = Vec::new();
     /// let mut matcher = TreeMatcher::new("fn match_bytes", "u64");
-    /// matcher.disable_clippy(true);
-    /// matcher.extend([("a".as_bytes(), "1")]);
-    /// matcher.render(&mut out).unwrap();
+    /// matcher
+    ///     .disable_clippy(true)
+    ///     .add("a".as_bytes(), "1")
+    ///     .render(&mut out)
+    ///     .unwrap();
     ///
     /// assert_str_eq!(
     ///     r#"#[cfg(not(feature = "cargo-clippy"))]
@@ -255,9 +309,7 @@ impl TreeMatcher {
             )?;
         }
 
-        if self.must_use {
-            writeln!(writer, "#[must_use]")?;
-        }
+        self.render_attributes(writer)?;
 
         match self.input_type {
             Input::Slice => {
@@ -277,9 +329,7 @@ impl TreeMatcher {
     ///
     /// This can return [`io::Error`] if there is a problem writing to `writer`.
     fn render_stub<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
-        if self.must_use {
-            writeln!(writer, "#[must_use]")?;
-        }
+        self.render_attributes(writer)?;
 
         match self.input_type {
             Input::Slice => TreeNode::default().render_slice(
@@ -293,6 +343,26 @@ impl TreeMatcher {
                 &self.return_type,
             ),
         }
+    }
+
+    /// Render attributes for the function or stub.
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing to `writer`.
+    fn render_attributes<W: io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> io::Result<()> {
+        if let Some(doc) = &self.doc {
+            writeln!(writer, "{doc}")?;
+        }
+
+        if self.must_use {
+            writeln!(writer, "#[must_use]")?;
+        }
+
+        Ok(())
     }
 }
 
