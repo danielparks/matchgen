@@ -41,8 +41,8 @@ use std::io;
 ///     let out_path = Path::new(&env::var("OUT_DIR")?).join("matcher.rs");
 ///     let mut out = BufWriter::new(File::create(out_path)?);
 ///
-///     writeln!(out, "/// My fancy matcher.")?;
 ///     TreeMatcher::new("pub fn fancy_matcher", "&'static [u8]")
+///         .doc("My fancy matcher.")
 ///         .add(b"one", r#"b"1""#)
 ///         .add(b"two", r#"b"2""#)
 ///         .add(b"three", r#"b"3""#)
@@ -157,17 +157,15 @@ impl TreeMatcher {
     /// # Example
     ///
     /// ```rust
-    /// use bstr::ByteVec;
-    /// use matchgen::TreeMatcher;
-    /// use pretty_assertions::assert_str_eq;
-    ///
     /// let mut out = Vec::new();
-    /// let mut matcher = TreeMatcher::new("fn match_bytes", "u64");
-    /// matcher.must_use(false);
-    /// matcher.extend([("a".as_bytes(), "1")]);
-    /// matcher.render(&mut out).unwrap();
+    /// matchgen::TreeMatcher::new("fn match_bytes", "u64")
+    ///     .must_use(false)
+    ///     .add("a".as_bytes(), "1")
+    ///     .render(&mut out)
+    ///     .unwrap();
     ///
-    /// assert_str_eq!(
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
     ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice.first() {
@@ -354,19 +352,16 @@ impl TreeMatcher {
     /// # Example
     ///
     /// ```rust
-    /// use bstr::ByteVec;
-    /// use matchgen::TreeMatcher;
-    /// use pretty_assertions::assert_str_eq;
-    ///
     /// let mut out = Vec::new();
-    /// let mut matcher = TreeMatcher::new("fn match_bytes", "u64");
+    /// let mut matcher = matchgen::TreeMatcher::new("fn match_bytes", "u64");
     /// matcher
     ///     .disable_clippy(true)
     ///     .add("a".as_bytes(), "1")
     ///     .render(&mut out)
     ///     .unwrap();
     ///
-    /// assert_str_eq!(
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
     ///     r#"#[cfg(not(feature = "cargo-clippy"))]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
@@ -480,6 +475,32 @@ where
     K: IntoIterator<Item = &'a u8>,
     V: Into<String>,
 {
+    /// Add matches from iterator or collection.
+    ///
+    /// See trait documentation in [`core::iter::Extend`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut out = Vec::new();
+    /// let mut matcher = matchgen::TreeMatcher::new("fn match_bytes", "u64");
+    /// matcher.extend([("a".as_bytes(), "1")]);
+    /// matcher.render(&mut out).unwrap();
+    ///
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
+    ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
+    /// #[must_use]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     match slice.first() {
+    ///         Some(97) => (Some(1), &slice[1..]),
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
     fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iter: I) {
         iter.into_iter().for_each(|(key, value)| {
             self.add(key, value);
@@ -618,16 +639,13 @@ impl TreeNode {
     /// # Example
     ///
     /// ```rust
-    /// use bstr::ByteVec;
-    /// use matchgen::TreeNode;
-    /// use pretty_assertions::assert_str_eq;
-    ///
     /// let mut out = Vec::new();
-    /// TreeNode::from_iter([("a".as_bytes(), "1")])
+    /// matchgen::TreeNode::from_iter([("a".as_bytes(), "1")])
     ///     .render_iter(&mut out, "fn match_bytes", "u64")
     ///     .unwrap();
     ///
-    /// assert_str_eq!(
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
     ///     "\
     /// fn match_bytes<'a, I>(iter: &mut I) -> Option<u64>
     /// where
@@ -781,16 +799,13 @@ impl TreeNode {
     /// # Example
     ///
     /// ```rust
-    /// use bstr::ByteVec;
-    /// use matchgen::TreeNode;
-    /// use pretty_assertions::assert_str_eq;
-    ///
     /// let mut out = Vec::new();
-    /// TreeNode::from_iter([("a".as_bytes(), "1")])
+    /// matchgen::TreeNode::from_iter([("a".as_bytes(), "1")])
     ///     .render_slice(&mut out, "fn match_bytes", "u64")
     ///     .unwrap();
     ///
-    /// assert_str_eq!(
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
     ///     "\
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice.first() {

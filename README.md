@@ -43,8 +43,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let out_path = Path::new(&env::var("OUT_DIR")?).join("matcher.rs");
     let mut out = BufWriter::new(File::create(out_path)?);
 
-    writeln!(out, "/// Decode basic HTML entities.")?;
     TreeMatcher::new("pub fn entity_decode", "u8")
+        .doc("Decode basic HTML entities.")
         .add(b"&amp;", "b'&'")
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
