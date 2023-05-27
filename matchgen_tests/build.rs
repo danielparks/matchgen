@@ -51,57 +51,66 @@ fn main() -> Result<(), Box<dyn Error>> {
         .render_slice(&mut out, "pub fn match_nothing_slice_true", "bool")?;
     writeln!(out)?;
 
-    writeln!(out, "/// Match and return (bool, &[u8]).")?;
     TreeMatcher::new("pub fn slice_in_tuple", "(bool, &'static [u8])")
         .add(b"aab", "(true, &[1, 1])")
         .add(b"aa", "(false, &[1, 1])")
         .add(b"ab", "(true, &[1])")
         .add(b"a", "(false, &[1])")
+        // FIXME? I don’t understand why the blank lines cause failures here.
+        .doc(
+            "Match and return `(bool, &[u8])`.
+            \n\
+            Iterator version.
+            \n\
+            Really long doc string to ensure that clippy doesn’t complain even
+            though this will have to be will beyond whatever the line length
+            limit is.",
+        )
         .disable_clippy(true)
         .input_type(Input::Iterator)
         .render(&mut out)?;
     writeln!(out)?;
 
-    writeln!(out, "/// Match and return (bool, &[u8]).")?;
     TreeMatcher::new("pub fn slice_in_tuple_slice", "(bool, &'static [u8])")
         .add(b"aab", "(true, &[1, 1])")
         .add(b"aa", "(false, &[1, 1])")
         .add(b"ab", "(true, &[1])")
         .add(b"a", "(false, &[1])")
+        .doc("Match and return `(bool, &[u8])`.\n\nSlice version.")
         .disable_clippy(true)
         .input_type(Input::Slice)
         .render(&mut out)?;
     writeln!(out)?;
 
-    writeln!(out, "/// Decode basic HTML entities.")?;
     TreeMatcher::new("pub fn basic_entity_decode", "u8")
         .add(b"&amp;", "b'&'")
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
         .add(b"&quot;", "b'\"'")
+        .doc("Decode basic HTML entities.\n\nIterator version.")
         .disable_clippy(false)
         .input_type(Input::Iterator)
         .render(&mut out)?;
     writeln!(out)?;
 
-    writeln!(out, "/// Decode basic HTML entities.")?;
     TreeMatcher::new("pub fn basic_entity_decode_slice", "u8")
         .add(b"&amp;", "b'&'")
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
         .add(b"&quot;", "b'\"'")
+        .doc("Decode basic HTML entities.\n\nSlice version.")
         .disable_clippy(false)
         .input_type(Input::Slice)
         .render(&mut out)?;
     writeln!(out)?;
 
-    writeln!(out, "/// Decode most HTML entities.")?;
     let input = fs::read("most-html-entities.json")?;
     let input: serde_json::Map<String, serde_json::Value> =
         serde_json::from_slice(&input)?;
     let mut matcher =
         TreeMatcher::new("pub fn most_entity_decode", "&'static str");
     matcher
+        .doc("Decode most HTML entities.\n\nIterator version.")
         .disable_clippy(true)
         .input_type(Input::Iterator)
         .extend(input.iter().map(|(name, info)| {
@@ -113,10 +122,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     matcher.render(&mut out)?;
     writeln!(out)?;
 
-    writeln!(out, "/// Decode most HTML entities.")?;
     matcher.fn_name = "pub fn most_entity_decode_slice".to_string();
-    matcher.input_type(Input::Slice);
-    matcher.render(&mut out)?;
+    matcher
+        .doc("Decode most HTML entities.\n\nSlice version.")
+        .input_type(Input::Slice)
+        .render(&mut out)?;
     writeln!(out)?;
 
     Ok(())
