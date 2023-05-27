@@ -195,30 +195,64 @@ impl TreeMatcher {
         self
     }
 
-    /// Set documentation for the matcher.
+    /// Don’t include documentation for the matcher.
     ///
-    /// The `doc` argument, when unwrapped, should produce a Rust string literal
-    /// when rendered with [`fmt::Debug`].
+    /// This is the default behavior.
     ///
     /// # Example
     ///
     /// ```rust
-    /// use bstr::ByteVec;
-    /// use matchgen::TreeMatcher;
-    /// use pretty_assertions::assert_str_eq;
-    ///
     /// let mut out = Vec::new();
-    /// TreeMatcher::new("fn match_bytes", "u64")
-    ///     .doc(Some(
-    ///         "Match the first bytes of a slice.
-    ///
-    ///         Matches only the string `\"a\"` and returns `1`."
-    ///     ))
+    /// matchgen::TreeMatcher::new("fn match_bytes", "u64")
+    ///     .remove_doc()
     ///     .add("a".as_bytes(), "1")
     ///     .render(&mut out)
     ///     .unwrap();
     ///
-    /// assert_str_eq!(
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
+    ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
+    /// #[must_use]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     match slice.first() {
+    ///         Some(97) => (Some(1), &slice[1..]),
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    pub fn remove_doc(&mut self) -> &mut Self {
+        self.doc = None;
+        self
+    }
+
+    /// Set documentation for the matcher to a string.
+    ///
+    /// This is normally what you want. Just pass a string with the
+    /// documentation for your matcher, and it will produce an [attribute][]
+    /// like `#[doc = "My function documentation..."]`.
+    ///
+    /// The `doc` argument should produce a Rust string literal when rendered
+    /// with [`fmt::Debug`]. A normal [`String`] or [`str`] will work.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut out = Vec::new();
+    /// matchgen::TreeMatcher::new("fn match_bytes", "u64")
+    ///     .doc(
+    ///         "Match the first bytes of a slice.
+    ///
+    ///         Matches only the string `\"a\"` and returns `1`."
+    ///     )
+    ///     .add("a".as_bytes(), "1")
+    ///     .render(&mut out)
+    ///     .unwrap();
+    ///
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
     ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
     /// #[doc = "Match the first bytes of a slice.\n\n        Matches only the string `\"a\"` and returns `1`."]
     /// #[must_use]
@@ -232,11 +266,86 @@ impl TreeMatcher {
     ///     out.into_string().unwrap(),
     /// );
     /// ```
-    pub fn doc<S>(&mut self, doc: Option<S>) -> &mut Self
-    where
-        S: fmt::Debug,
-    {
-        self.doc = doc.map(|s| format!("#[doc = {s:?}]"));
+    ///
+    /// [attribute]: https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html
+    pub fn doc<S: fmt::Debug>(&mut self, doc: S) -> &mut Self {
+        self.doc = Some(format!("#[doc = {doc:?}]"));
+        self
+    }
+
+    /// Set documentation for the matcher to a Rust expression.
+    ///
+    /// Generally you want [`Self::doc()`], not this. This can produce an
+    /// [attribute][] like `#[doc = include_str!("my_func.md")]`.
+    ///
+    /// The `doc` argument should produce a Rust expression when rendered with
+    /// [`fmt::Display`]. A normal [`String`] or [`str`] will work.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut out = Vec::new();
+    /// matchgen::TreeMatcher::new("fn match_bytes", "u64")
+    ///     .doc_raw(r#"include_str!("match_bytes.md")"#)
+    ///     .add("a".as_bytes(), "1")
+    ///     .render(&mut out)
+    ///     .unwrap();
+    ///
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
+    ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
+    /// #[doc = include_str!("match_bytes.md")]
+    /// #[must_use]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     match slice.first() {
+    ///         Some(97) => (Some(1), &slice[1..]),
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    ///
+    /// [attribute]: https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html
+    pub fn doc_raw<S: fmt::Display>(&mut self, doc: S) -> &mut Self {
+        self.doc = Some(format!("#[doc = {doc}]"));
+        self
+    }
+
+    /// Set documentation for the matcher to an option.
+    ///
+    /// Generally you want [`Self::doc()`], not this. This can produce an
+    /// [attribute][] like `#[doc(hidden)]`.
+    ///
+    /// The `doc` argument should produce the options when rendered with
+    /// [`fmt::Display`]. A normal [`String`] or [`str`] will work.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut out = Vec::new();
+    /// matchgen::TreeMatcher::new("fn match_bytes", "u64")
+    ///     .doc_option("hidden")
+    ///     .render(&mut out)
+    ///     .unwrap();
+    ///
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
+    ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
+    /// #[doc(hidden)]
+    /// #[must_use]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     (None, slice)
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    ///
+    /// [attribute]: https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html
+    pub fn doc_option<S: fmt::Display>(&mut self, doc: S) -> &mut Self {
+        self.doc = Some(format!("#[doc({doc})]"));
         self
     }
 

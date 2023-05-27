@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"ab", "(true, &[1])")
         .add(b"a", "(false, &[1])")
         // FIXME? I don’t understand why the blank lines cause failures here.
-        .doc(Some(
+        .doc(
             "Match and return `(bool, &[u8])`.
             \n\
             Iterator version.
@@ -65,7 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Really long doc string to ensure that clippy doesn’t complain even
             though this will have to be will beyond whatever the line length
             limit is.",
-        ))
+        )
         .disable_clippy(true)
         .input_type(Input::Iterator)
         .render(&mut out)?;
@@ -76,7 +76,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"aa", "(false, &[1, 1])")
         .add(b"ab", "(true, &[1])")
         .add(b"a", "(false, &[1])")
-        .doc(Some("Match and return `(bool, &[u8])`.\n\nSlice version."))
+        .doc("Match and return `(bool, &[u8])`.\n\nSlice version.")
         .disable_clippy(true)
         .input_type(Input::Slice)
         .render(&mut out)?;
@@ -87,7 +87,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
         .add(b"&quot;", "b'\"'")
-        .doc(Some("Decode basic HTML entities.\n\nIterator version."))
+        .doc("Decode basic HTML entities.\n\nIterator version.")
         .disable_clippy(false)
         .input_type(Input::Iterator)
         .render(&mut out)?;
@@ -98,7 +98,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
         .add(b"&quot;", "b'\"'")
-        .doc(Some("Decode basic HTML entities.\n\nSlice version."))
+        .doc("Decode basic HTML entities.\n\nSlice version.")
         .disable_clippy(false)
         .input_type(Input::Slice)
         .render(&mut out)?;
@@ -110,7 +110,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut matcher =
         TreeMatcher::new("pub fn most_entity_decode", "&'static str");
     matcher
-        .doc(Some("Decode most HTML entities.\n\nIterator version."))
+        .doc("Decode most HTML entities.\n\nIterator version.")
         .disable_clippy(true)
         .input_type(Input::Iterator)
         .extend(input.iter().map(|(name, info)| {
@@ -124,7 +124,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     matcher.fn_name = "pub fn most_entity_decode_slice".to_string();
     matcher
-        .doc(Some("Decode most HTML entities.\n\nSlice version."))
+        .doc("Decode most HTML entities.\n\nSlice version.")
         .input_type(Input::Slice)
         .render(&mut out)?;
     writeln!(out)?;
