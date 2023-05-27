@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+## main branch
+
 ## Release 0.2.0 (2023-05-26)
 
 This release is primarily aimed at ensuring generated code passes lints.
