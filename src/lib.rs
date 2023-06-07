@@ -616,7 +616,7 @@ impl TreeNode {
             key: K,
             value: String,
         ) {
-            let mut node = key.fold(node, |node, &c| {
+            let node = key.fold(node, |node, &c| {
                 node.branch.entry(c).or_insert_with(TreeNode::default)
             });
             node.leaf = Some(value);
