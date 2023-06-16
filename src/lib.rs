@@ -105,13 +105,14 @@ impl TreeMatcher {
     /// [`Self::extend()`], then turn it into code with [`Self::render()`].
     ///
     /// See the [struct documentation][TreeMatcher] for a complete example.
-    pub fn new<N: AsRef<str>, R: AsRef<str>>(
-        fn_name: N,
-        return_type: R,
-    ) -> Self {
+    pub fn new<N, R>(fn_name: &N, return_type: &R) -> Self
+    where
+        N: ToString + ?Sized,
+        R: ToString + ?Sized,
+    {
         Self {
-            fn_name: fn_name.as_ref().to_string(),
-            return_type: return_type.as_ref().to_string(),
+            fn_name: fn_name.to_string(),
+            return_type: return_type.to_string(),
             input_type: Input::Slice,
             disable_clippy: false,
             must_use: true,
@@ -669,15 +670,18 @@ impl TreeNode {
     ///
     /// This can return [`io::Error`] if there is a problem writing to `writer`.
     #[allow(clippy::items_after_statements)]
-    pub fn render_iter<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
+    pub fn render_iter<W, N, R>(
         &self,
         writer: &mut W,
-        fn_name: N,
-        return_type: R,
-    ) -> io::Result<()> {
+        fn_name: &N,
+        return_type: &R,
+    ) -> io::Result<()>
+    where
+        W: io::Write,
+        N: fmt::Display + ?Sized,
+        R: fmt::Display + ?Sized,
+    {
         let indent = "    "; // Our formatting prevents embedding this.
-        let fn_name = fn_name.as_ref();
-        let return_type = return_type.as_ref();
 
         if self.branch.is_empty() {
             // Special handling for when no matches were added.
@@ -822,15 +826,18 @@ impl TreeNode {
     ///
     /// This can return [`io::Error`] if there is a problem writing to `writer`.
     #[allow(clippy::items_after_statements)]
-    pub fn render_slice<W: io::Write, N: AsRef<str>, R: AsRef<str>>(
+    pub fn render_slice<W, N, R>(
         &self,
         writer: &mut W,
-        fn_name: N,
-        return_type: R,
-    ) -> io::Result<()> {
+        fn_name: &N,
+        return_type: &R,
+    ) -> io::Result<()>
+    where
+        W: io::Write,
+        N: fmt::Display + ?Sized,
+        R: fmt::Display + ?Sized,
+    {
         let indent = "    "; // Our formatting prevents embedding this.
-        let fn_name = fn_name.as_ref();
-        let return_type = return_type.as_ref();
 
         write!(
             writer,
