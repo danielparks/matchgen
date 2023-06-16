@@ -1,7 +1,12 @@
+//! Benchmark generated `most_entity_decode*` functions with [`iai`].
+
+#![allow(clippy::missing_docs_in_private_items)]
+
 use iai::black_box;
-use matchgen_tests::*;
+use matchgen_tests::{most_entity_decode, most_entity_decode_slice};
 use paste::paste;
 
+/// Helper for benchmarks.
 macro_rules! iai_benchmarks {
     ( $( ($name:ident, $input:expr), )+ ) => {
         paste! {

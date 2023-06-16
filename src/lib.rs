@@ -10,10 +10,10 @@
 //!
 //! [build script]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 
+// For clarity and tools like cargo-geiger. Most lint configuration is in
+// Cargo.toml, but it requires nightly. This should be removed once configuring
+// lints in Cargo.toml is stabilized.
 #![forbid(unsafe_code)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::let_underscore_untyped, clippy::map_unwrap_or)]
-#![warn(missing_docs)]
 
 use std::collections::HashMap;
 use std::fmt;
@@ -609,8 +609,8 @@ impl TreeNode {
         K: IntoIterator<Item = &'a u8>,
         V: Into<String>,
     {
-        // FIXME? Without this internal function `self` is moved into `fold()`
-        // and thus cannot be returned.
+        /// Without this internal function `self` is moved into `fold()` and
+        /// thus cannot be returned.
         #[inline]
         fn internal<'a, K: Iterator<Item = &'a u8>>(
             node: &mut TreeNode,
@@ -708,6 +708,7 @@ impl TreeNode {
         // FIXME: this is recursive, so for long patterns it could blow out the
         // stack. Transform this to an iterative algorithm.
 
+        /// Render a node: handle nodes that are a leaf, are a branch, or both.
         #[inline]
         fn render_child<W: io::Write>(
             node: &TreeNode,
@@ -736,13 +737,20 @@ impl TreeNode {
                     {indent}    let fallback_iter = iter.clone();\n\
                     {indent}    "
                 )?;
-                render_match(node, writer, level + 1, node.leaf.as_ref())?;
+                render_match(
+                    node,
+                    writer,
+                    level.checked_add(1).unwrap(),
+                    node.leaf.as_ref(),
+                )?;
                 write!(writer, "\n{indent}}}")?;
             }
 
             Ok(())
         }
 
+        /// Render a match statement to find the next node based on the next
+        /// character, i.e. renders `node.branch`.
         #[inline]
         fn render_match<W: io::Write>(
             node: &TreeNode,
@@ -754,7 +762,12 @@ impl TreeNode {
             writeln!(writer, "match iter.next() {{")?;
             for (chunk, child) in &node.branch {
                 write!(writer, "{indent}    Some({chunk:?}) => ")?;
-                render_child(child, writer, level + 1, fallback)?;
+                render_child(
+                    child,
+                    writer,
+                    level.checked_add(1).unwrap(),
+                    fallback,
+                )?;
                 if child.branch.is_empty() {
                     // render_child() wrote a value, not a match block.
                     writeln!(writer, ",")?;
@@ -777,13 +790,11 @@ impl TreeNode {
             Ok(())
         }
 
+        /// Format `Option<"Rust code">` as Rust code.
         #[inline]
         fn leaf_to_str(leaf: Option<&String>) -> String {
-            if let Some(leaf) = leaf {
-                format!("Some({leaf})")
-            } else {
-                "None".to_string()
-            }
+            leaf.map(|leaf| format!("Some({leaf})"))
+                .unwrap_or_else(|| "None".to_owned())
         }
 
         Ok(())
@@ -850,6 +861,7 @@ impl TreeNode {
         // FIXME: this is recursive, so for long patterns it could blow out the
         // stack. Transform this to an iterative algorithm.
 
+        /// Render a node: handle nodes that are a leaf, are a branch, or both.
         #[inline]
         fn render_child<W: io::Write>(
             node: &TreeNode,
@@ -876,11 +888,12 @@ impl TreeNode {
 
                 let fallback =
                     node.leaf.as_ref().map(|leaf| (leaf, index)).or(fallback);
-                let indent = "    ".repeat(index + 1);
+                let next_index = index.checked_add(1).unwrap();
+                let indent = "    ".repeat(next_index);
 
                 for (chunk, child) in &node.branch {
                     write!(writer, "{indent}    Some({chunk:?}) => ")?;
-                    render_child(child, writer, index + 1, fallback)?;
+                    render_child(child, writer, next_index, fallback)?;
                     if child.branch.is_empty() {
                         // render_child() wrote a value, not a match block.
                         writeln!(writer, ",")?;
@@ -893,7 +906,7 @@ impl TreeNode {
                 let default = if let Some((value, index)) = fallback {
                     format!("(Some({value}), &slice[{index}..])")
                 } else {
-                    "(None, slice)".to_string()
+                    "(None, slice)".to_owned()
                 };
 
                 write!(
@@ -913,8 +926,8 @@ where
     K: IntoIterator<Item = &'a u8>,
     V: Into<String>,
 {
-    fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> TreeNode {
-        let mut root = TreeNode::default();
+    fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> Self {
+        let mut root = Self::default();
         root.extend(iter);
         root
     }
