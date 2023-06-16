@@ -1,5 +1,9 @@
+//! Test generated `match_nothing*` functions.
+
+#![allow(clippy::missing_docs_in_private_items)]
+
 use assert2::check;
-use matchgen_tests::*;
+use matchgen_tests::{match_nothing, match_nothing_slice};
 use paste::paste;
 
 macro_rules! test {

@@ -1,5 +1,9 @@
+//! Test generated `basic_entity_decode*` functions.
+
+#![allow(clippy::missing_docs_in_private_items)]
+
 use assert2::check;
-use matchgen_tests::*;
+use matchgen_tests::{basic_entity_decode, basic_entity_decode_slice};
 use paste::paste;
 
 macro_rules! test {

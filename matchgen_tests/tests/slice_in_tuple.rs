@@ -1,5 +1,9 @@
+//! Test generated `slice_in_tuple*` functions.
+
+#![allow(clippy::missing_docs_in_private_items)]
+
 use assert2::check;
-use matchgen_tests::*;
+use matchgen_tests::{slice_in_tuple, slice_in_tuple_slice};
 use paste::paste;
 
 macro_rules! test {

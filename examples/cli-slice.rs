@@ -1,3 +1,6 @@
+//! Take arguments as key=value and output a matcher function that consumes a
+//! slice.
+
 use matchgen::{Input, TreeMatcher};
 use std::env;
 use std::io;

@@ -1,10 +1,4 @@
-#![forbid(unsafe_code)]
-#![warn(clippy::pedantic)]
-#![allow(
-    clippy::let_underscore_untyped,
-    clippy::map_unwrap_or,
-    clippy::too_many_lines
-)]
+//! Generate code for matchers used in tests.
 
 use matchgen::{Input, TreeMatcher};
 use std::env;
@@ -13,6 +7,7 @@ use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
+#[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
     let out_path = Path::new(&env::var("OUT_DIR")?).join("test-matchers.rs");
     let mut out = BufWriter::new(File::create(out_path)?);
@@ -122,7 +117,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     matcher.render(&mut out)?;
     writeln!(out)?;
 
-    matcher.fn_name = "pub fn most_entity_decode_slice".to_string();
+    matcher.fn_name = "pub fn most_entity_decode_slice".to_owned();
     matcher
         .doc("Decode most HTML entities.\n\nSlice version.")
         .input_type(Input::Slice)

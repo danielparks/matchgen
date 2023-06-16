@@ -1,11 +1,15 @@
+//! Benchmark generated `most_entity_decode*` functions with [`criterion`].
+
+#![allow(clippy::missing_docs_in_private_items, missing_docs)]
+
 use criterion::{
     criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
 };
-use matchgen_tests::*;
+use matchgen_tests::{most_entity_decode, most_entity_decode_slice};
 use std::convert::TryInto;
 use std::time::Duration;
 
-// Helper for benchmarks.
+/// Helper for benchmarks.
 macro_rules! benchmark {
     ( $group:expr, $test_name:expr, $input:expr ) => {{
         let input = $input;
