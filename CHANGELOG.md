@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## main branch
 
+### Breaking changes
+
+* Changed `TreeMatcher::new()` to accept `ToString + ?Sized` instead of
+  `AsRef<str>`, since we convert to an owned `String` regardless. This is very
+  unlikely to break anything.
+* Changed `TreeNode::render_iter()` to accept `fmt::Display + ?Sized` instead of
+  `AsRef<str>`, since we use the parameters in format strings. This is very
+  unlikely to break anything.
+
 ## Release 0.2.0 (2023-05-26)
 
 This release is primarily aimed at ensuring generated code passes lints.
