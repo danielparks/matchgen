@@ -104,10 +104,10 @@ impl TreeMatcher {
     /// [`Self::extend()`], then turn it into code with [`Self::render()`].
     ///
     /// See the [struct documentation][TreeMatcher] for a complete example.
-    pub fn new<N, R>(fn_name: &N, return_type: &R) -> Self
+    pub fn new<N, R>(fn_name: N, return_type: R) -> Self
     where
-        N: ToString + ?Sized,
-        R: ToString + ?Sized,
+        N: fmt::Display,
+        R: fmt::Display,
     {
         Self {
             fn_name: fn_name.to_string(),
@@ -672,13 +672,13 @@ impl TreeNode {
     pub fn render_iter<W, N, R>(
         &self,
         writer: &mut W,
-        fn_name: &N,
-        return_type: &R,
+        fn_name: N,
+        return_type: R,
     ) -> io::Result<()>
     where
         W: io::Write,
-        N: fmt::Display + ?Sized,
-        R: fmt::Display + ?Sized,
+        N: fmt::Display,
+        R: fmt::Display,
     {
         let indent = "    "; // Our formatting prevents embedding this.
 
@@ -839,13 +839,13 @@ impl TreeNode {
     pub fn render_slice<W, N, R>(
         &self,
         writer: &mut W,
-        fn_name: &N,
-        return_type: &R,
+        fn_name: N,
+        return_type: R,
     ) -> io::Result<()>
     where
         W: io::Write,
-        N: fmt::Display + ?Sized,
-        R: fmt::Display + ?Sized,
+        N: fmt::Display,
+        R: fmt::Display,
     {
         let indent = "    "; // Our formatting prevents embedding this.
 
