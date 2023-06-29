@@ -6,10 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking changes
 
-* Changed `TreeMatcher::new()` to accept `ToString + ?Sized` instead of
-  `AsRef<str>`, since we convert to an owned `String` regardless. This is very
-  unlikely to break anything.
-* Changed `TreeNode::render_iter()` to accept `fmt::Display + ?Sized` instead of
+* Changed `TreeMatcher::new()` to accept `std::fmt::Display` instead of
+  `AsRef<str>`, since we convert to a `String` with `to_string()` regardless.
+  This is very unlikely to break anything.
+* Changed `TreeNode::render_iter()` to accept `std::fmt::Display` instead of
   `AsRef<str>`, since we use the parameters in format strings. This is very
   unlikely to break anything.
 
