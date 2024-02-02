@@ -10,8 +10,7 @@
 //!
 //! [build script]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 
-// Most lint configuration is in lints.toml, but that isn’t supported by
-// cargo-geiger, and it only supports deny, not forbid.
+// Lint configuration in Cargo.toml isn’t supported by cargo-geiger.
 #![forbid(unsafe_code)]
 
 use std::collections::HashMap;
