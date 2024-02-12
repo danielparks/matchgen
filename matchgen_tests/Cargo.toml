@@ -35,3 +35,6 @@ required-features = ["iai"]
 [[bench]]
 name = "most_entity_decode"
 harness = false
+
+[lints]
+workspace = true
