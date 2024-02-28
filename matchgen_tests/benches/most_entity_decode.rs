@@ -6,7 +6,6 @@ use criterion::{
     criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
 };
 use matchgen_tests::{most_entity_decode, most_entity_decode_slice};
-use std::convert::TryInto;
 use std::time::Duration;
 
 /// Helper for benchmarks.
