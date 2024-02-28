@@ -361,7 +361,7 @@ impl TreeMatcher {
     ///
     /// use bstr::ByteVec;
     /// pretty_assertions::assert_str_eq!(
-    ///     r#"#[cfg(not(feature = "cargo-clippy"))]
+    ///     r#"#[cfg(not(clippy))]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice.first() {
@@ -370,7 +370,7 @@ impl TreeMatcher {
     ///     }
     /// }
     ///
-    /// #[cfg(feature = "cargo-clippy")]
+    /// #[cfg(clippy)]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     (None, slice)
@@ -385,14 +385,14 @@ impl TreeMatcher {
     /// This can return [`io::Error`] if there is a problem writing to `writer`.
     pub fn render<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         if self.disable_clippy {
-            writeln!(writer, "#[cfg(not(feature = \"cargo-clippy\"))]")?;
+            writeln!(writer, "#[cfg(not(clippy))]")?;
         }
 
         self.render_func(writer)?;
 
         if self.disable_clippy {
             writeln!(writer)?;
-            writeln!(writer, "#[cfg(feature = \"cargo-clippy\")]")?;
+            writeln!(writer, "#[cfg(clippy)]")?;
             self.render_stub(writer)?;
         }
 
