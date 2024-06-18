@@ -13,6 +13,14 @@ All notable changes to this project will be documented in this file.
   `AsRef<str>`, since we use the parameters in format strings. This is very
   unlikely to break anything.
 
+### Changes
+
+* Switched [code to disable Clippy][disable_clippy] to use `cfg(clippy)` instead
+  of `cfg(feature = "cargo-clippy")`. The [feature has been deprecated].
+
+[disable_clippy]: https://docs.rs/matchgen/latest/matchgen/struct.TreeMatcher.html#method.disable_clippy
+[feature has been deprecated]: https://blog.rust-lang.org/2024/02/28/Clippy-deprecating-feature-cargo-clippy.html
+
 ## Release 0.2.0 (2023-05-26)
 
 This release is primarily aimed at ensuring generated code passes lints.
