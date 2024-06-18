@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+## main branch
+
 ## Release 0.3.0 (2024-06-18)
 
 Once again, this release was cut to ensure generated code passes lints.
