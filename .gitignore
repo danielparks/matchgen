@@ -3,4 +3,3 @@
 /matchgen_tests/target/*
 !/matchgen_tests/target/iai
 **/*.rs.bk
-Cargo.lock
