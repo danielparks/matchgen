@@ -7,7 +7,7 @@ matchgen = { path = "." }
 
 [package]
 name = "matchgen"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Daniel Parks <oss-matchgen@demonhorse.org>"]
 description = "Generate functions to quickly map byte string prefixes to values"
 homepage = "https://github.com/danielparks/matchgen"

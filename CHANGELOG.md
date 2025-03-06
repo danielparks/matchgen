@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## main branch
+## Release 0.3.1 (2025-03-06)
 
 * Added `TreeMatcher::write_to_path()` and `TreeMatcher::write_to_out_dir()` for
   convenience. This reduces boilerplate needed in build scripts.
