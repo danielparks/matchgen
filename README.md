@@ -33,23 +33,16 @@ like the following:
 
 ```rust
 use matchgen::TreeMatcher;
-use std::env;
 use std::error::Error;
-use std::fs::File;
-use std::io::{BufWriter, Write};
-use std::path::Path;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let out_path = Path::new(&env::var("OUT_DIR")?).join("matcher.rs");
-    let mut out = BufWriter::new(File::create(out_path)?);
-
     TreeMatcher::new("pub fn entity_decode", "u8")
         .doc("Decode basic HTML entities.")
         .add(b"&amp;", "b'&'")
         .add(b"&lt;", "b'<'")
         .add(b"&gt;", "b'>'")
         .add(b"&quot;", "b'\"'")
-        .render(&mut out)?;
+        .write_to_out_dir("matcher.rs")?;
 
     Ok(())
 }

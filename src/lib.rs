@@ -14,8 +14,11 @@
 #![forbid(unsafe_code)]
 
 use std::collections::HashMap;
+use std::env;
 use std::fmt;
-use std::io;
+use std::fs;
+use std::io::{self, Write};
+use std::path::Path;
 
 /// Build a function with nested match statements to quickly map byte sequences
 /// to values.
@@ -27,24 +30,17 @@ use std::io;
 ///
 /// ```rust
 /// use matchgen::TreeMatcher;
-/// use std::env;
 /// use std::error::Error;
-/// use std::fs::File;
-/// use std::io::{BufWriter, Read, Write};
-/// use std::path::Path;
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
 ///     # let tmp_dir = temp_dir::TempDir::new().unwrap();
-///     # env::set_var("OUT_DIR", tmp_dir.path());
-///     let out_path = Path::new(&env::var("OUT_DIR")?).join("matcher.rs");
-///     let mut out = BufWriter::new(File::create(out_path)?);
-///
+///     # std::env::set_var("OUT_DIR", tmp_dir.path());
 ///     TreeMatcher::new("pub fn fancy_matcher", "&'static [u8]")
 ///         .doc("My fancy matcher.")
 ///         .add(b"one", r#"b"1""#)
 ///         .add(b"two", r#"b"2""#)
 ///         .add(b"three", r#"b"3""#)
-///         .render(&mut out)?;
+///         .write_to_out_dir("matcher.rs")?;
 ///
 ///     Ok(())
 /// }
@@ -344,6 +340,70 @@ impl TreeMatcher {
     pub fn doc_option<S: fmt::Display>(&mut self, doc: S) -> &mut Self {
         self.doc = Some(format!("#[doc({doc})]"));
         self
+    }
+
+    /// Write the matcher as a Rust source file in `$OUT_DIR`.
+    ///
+    /// This is what you want if you’re using this in `build.rs` as intended.
+    /// See the [`TreeMatcher`] for a full example.
+    ///
+    /// This will overwrite the file if it already exists, or create a new file
+    /// if it does not.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use std::env::var;
+    /// use std::path::Path;
+    /// use std::fs;
+    ///
+    /// # let tmp_dir = temp_dir::TempDir::new().unwrap();
+    /// # std::env::set_var("OUT_DIR", tmp_dir.path());
+    /// matchgen::TreeMatcher::new("fn match_bytes", "u64")
+    ///     .add("a".as_bytes(), "1")
+    ///     .write_to_out_dir("matcher.rs")
+    ///     .unwrap();
+    ///
+    /// let path = Path::new(&var("OUT_DIR").unwrap()).join("matcher.rs");
+    /// assert!(fs::read_to_string(path).unwrap().contains("fn match_bytes"));
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing the file, or
+    /// if `$OUT_DIR` isn’t set to a UTF-8 string.
+    pub fn write_to_out_dir<P: AsRef<Path>>(
+        &self,
+        sub_path: P,
+    ) -> io::Result<()> {
+        let out_dir = &env::var("OUT_DIR")
+            .map_err(|error| io::Error::new(io::ErrorKind::Other, error))?;
+        self.write_to_path(Path::new(out_dir).join(sub_path))
+    }
+
+    /// Write the matcher as a Rust source file at `path`.
+    ///
+    /// This will overwrite the file if it already exists, or create a new file
+    /// if it does not.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # let tmp_dir = temp_dir::TempDir::new().unwrap();
+    /// # let path = tmp_dir.child("test.rs");
+    /// matchgen::TreeMatcher::new("fn match_bytes", "u64")
+    ///     .add("a".as_bytes(), "1")
+    ///     .write_to_path(&path)
+    ///     .unwrap();
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing to `path`.
+    pub fn write_to_path<P: AsRef<Path>>(&self, path: P) -> io::Result<()> {
+        let mut out = io::BufWriter::new(fs::File::create(path)?);
+        self.render(&mut out)?;
+        out.flush()
     }
 
     /// Render the matcher into Rust code.
