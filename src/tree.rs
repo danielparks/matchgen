@@ -135,7 +135,8 @@ impl TreeMatcher {
         self
     }
 
-    /// Set whether or not to mark the generated function with [`#[must_use]`].
+    /// Set whether or not to mark the generated function with
+    /// [`#[must_use]`][must_use].
     ///
     /// # Example
     ///
@@ -160,6 +161,8 @@ impl TreeMatcher {
     ///     out.into_string().unwrap(),
     /// );
     /// ```
+    ///
+    /// [must_use]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-must_use-attribute
     pub fn must_use(&mut self, must_use: bool) -> &mut Self {
         self.must_use = must_use;
         self
