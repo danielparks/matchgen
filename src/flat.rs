@@ -11,8 +11,14 @@ use std::path::Path;
 /// to values.
 ///
 /// The generated function will accept a slice of bytes (`&[u8]`) and will
-/// return a tuple containing the match, if any, and the remainder of the slice,
-/// i.e. `(Option<{return_type}>, &[u8])`.
+/// return a tuple containing:
+///
+///   1. The match, if any (`Option<{return_type}>`)
+///   2. Either, depending on [`Self::return_slice()`]:
+///      * The remainder of the slice (`&[u8]`).
+///      * The index of the next unmatched byte (`usize`).
+///
+/// See [`Self::return_index()`] if you need a `const fn` matcher.
 ///
 /// For example, suppose you generate a [matcher for all HTML entities][htmlize]
 /// called `entity_matcher()`:
@@ -82,6 +88,15 @@ pub struct FlatMatcher {
     /// The return type (will be wrapped in [`Option`]), e.g. `"&'static str"`.
     pub return_type: String,
 
+    /// Whether to return the remainder as a slice or an index.
+    ///
+    /// If `false`, the remainder will be returned as the index of the next
+    /// unmatched byte (which might be past the end of the input), and the
+    /// generated matching function will be `const`.
+    ///
+    /// Defaults to `true`.
+    pub return_slice: bool,
+
     /// Whether to prevent Clippy from evaluating the generated code. Defaults
     /// to `false`.
     ///
@@ -120,6 +135,7 @@ impl FlatMatcher {
         Self {
             fn_name: fn_name.to_string(),
             return_type: return_type.to_string(),
+            return_slice: true,
             disable_clippy: false,
             must_use: true,
             doc: None,
@@ -140,6 +156,44 @@ impl FlatMatcher {
     {
         self.arms
             .insert(key.into_iter().copied().collect(), value.into());
+        self
+    }
+
+    /// Set the function to return the remainder as a slice.
+    ///
+    /// That is, the signature of the generated will look something like:
+    ///
+    /// ```rust,ignore
+    /// fn matcher(input: &[u8]) -> (Option<ReturnType>, &[u8]) {
+    /// #     (ReturnType, input)
+    /// # }
+    /// ```
+    ///
+    /// This is the opposite of [`Self::return_index()`].
+    pub fn return_slice(&mut self) -> &mut Self {
+        self.return_slice = true;
+        self
+    }
+
+    /// Set the function to return the remainder as an index.
+    ///
+    /// That is, the signature of the generated will look something like:
+    ///
+    /// ```rust,ignore
+    /// const fn matcher(input: &[u8]) -> (Option<ReturnType>, usize) {
+    /// #     (ReturnType, input)
+    /// # }
+    /// ```
+    ///
+    /// This is the opposite of [`Self::return_slice()`].
+    ///
+    /// The returned index might be just past the end of the input if the entire
+    /// input was matched.
+    ///
+    /// This will cause the generated matching function to be `const`, since
+    /// it won’t require any `const` incompatible features.
+    pub fn return_index(&mut self) -> &mut Self {
+        self.return_slice = false;
         self
     }
 
@@ -474,18 +528,13 @@ impl FlatMatcher {
     /// This can return [`io::Error`] if there is a problem writing to `writer`.
     pub fn render_func<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         let indent = "    "; // Our formatting prevents embedding this.
-        let fn_name = &self.fn_name;
-        let return_type = &self.return_type;
 
-        self.render_attributes(writer)?;
+        self.render_fn_start(writer, "slice")?;
 
         write!(
             writer,
-            "{fn_name}(slice: &[u8]) -> (Option<{return_type}>, &[u8]) {{\n\
-            {indent}#[allow(unreachable_patterns)]\n\
+            "{indent}#[allow(unreachable_patterns)]\n\
             {indent}match slice {{\n",
-            fn_name = fn_name,
-            return_type = return_type,
             indent = indent,
         )?;
 
@@ -494,32 +543,31 @@ impl FlatMatcher {
         entries.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
         for (key, value) in entries {
             let count = key.len();
-            if count == 0 {
-                writeln!(
-                    writer,
-                    "{indent}    [..] => (Some({value}), slice),",
-                    indent = indent,
-                    value = value,
-                )?;
-            } else {
-                let chars = itertools::join(key.iter(), ", ");
-                writeln!(
-                    writer,
-                    "{indent}    [{chars}, ..] => (Some({value}), &slice[{count}..]),",
-                    indent = indent,
-                    chars = chars,
-                    value = value,
-                    count = count,
-                )?;
-            }
+            writeln!(
+                writer,
+                "{indent}    [{prefix}..] => (Some({value}), {remainder}),",
+                indent = indent,
+                prefix = if count == 0 {
+                    String::new()
+                } else {
+                    format!("{}, ", itertools::join(key.iter(), ", "))
+                },
+                value = value,
+                remainder = if self.return_slice {
+                    format!("&slice[{}..]", count)
+                } else {
+                    count.to_string()
+                },
+            )?;
         }
 
         write!(
             writer,
-            "{indent}    _ => (None, slice),\n\
+            "{indent}    _ => (None, {remainder}),\n\
             {indent}}}\n\
             }}\n",
             indent = indent,
+            remainder = if self.return_slice { "slice" } else { "0" },
         )?;
 
         Ok(())
@@ -534,22 +582,35 @@ impl FlatMatcher {
     /// This can return [`io::Error`] if there is a problem writing to `writer`.
     pub fn render_stub<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         let indent = "    "; // Our formatting prevents embedding this.
-        let fn_name = &self.fn_name;
-        let return_type = &self.return_type;
 
-        self.render_attributes(writer)?;
+        self.render_fn_start(
+            writer,
+            if self.return_slice { "slice" } else { "_" },
+        )?;
 
         write!(
             writer,
-            "{fn_name}(slice: &[u8]) -> (Option<{return_type}>, &[u8]) {{\n\
-            {indent}(None, slice)\n\
+            "{indent}(None, {remainder})\n\
             }}\n",
-            fn_name = fn_name,
-            return_type = return_type,
             indent = indent,
+            remainder = if self.return_slice { "slice" } else { "0" },
         )?;
 
         Ok(())
+    }
+
+    /// Get the function name with it modifiers.
+    ///
+    /// This will add `const` in the appropriate place if necessary.
+    fn fn_name(&self) -> String {
+        if self.return_slice {
+            self.fn_name.clone()
+        } else if self.fn_name.starts_with("fn ") {
+            format!("const {}", self.fn_name)
+        } else {
+            // FIXME what if a tab or other non-space is used?
+            self.fn_name.replace(" fn ", " const fn ")
+        }
     }
 
     /// Render attributes for the function or stub.
@@ -557,9 +618,10 @@ impl FlatMatcher {
     /// # Errors
     ///
     /// This can return [`io::Error`] if there is a problem writing to `writer`.
-    fn render_attributes<W: io::Write>(
+    fn render_fn_start<W: io::Write>(
         &self,
         writer: &mut W,
+        parameter: &str,
     ) -> io::Result<()> {
         if let Some(doc) = &self.doc {
             writeln!(writer, "{}", doc)?;
@@ -568,6 +630,15 @@ impl FlatMatcher {
         if self.must_use {
             writeln!(writer, "#[must_use]")?;
         }
+
+        writeln!(
+            writer,
+            "{fn_name}({parameter}: &[u8]) -> (Option<{return_type}>, {remainder_type}) {{",
+            fn_name = self.fn_name(),
+            parameter = parameter,
+            return_type = &self.return_type,
+            remainder_type = if self.return_slice { "&[u8]" } else { "usize" },
+        )?;
 
         Ok(())
     }

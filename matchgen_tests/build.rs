@@ -141,5 +141,25 @@ fn main() -> Result<(), Box<dyn Error>> {
     matcher.render(&mut out)?;
     writeln!(out)?;
 
+    let input = fs::read("most-html-entities.json")?;
+    let input: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_slice(&input)?;
+    let mut matcher = FlatMatcher::new(
+        "pub fn most_entity_decode_flat_const",
+        "&'static str",
+    );
+    matcher
+        .doc("Decode most HTML entities.\n\nConst flat match slice version.")
+        .disable_clippy(true)
+        .return_index()
+        .extend(input.iter().map(|(name, info)| {
+            (
+                name.as_bytes(),
+                format!("{:?}", info["characters"].as_str().unwrap()),
+            )
+        }));
+    matcher.render(&mut out)?;
+    writeln!(out)?;
+
     Ok(())
 }

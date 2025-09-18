@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 * Added `FlatMatcher`, which produces a single `match` statement on a slice
   rather than a tree of `match` statements like `TreeMatcher`.
+
+  `FlatMatcher` can also be set to return the index of the next unmatched byte
+  rather than a slice of the remainder, which automatically causes the resulting
+  matcher to be `const`.
 * Changed `TreeMatcher::new()` to accept `ToString` instead of
   `std::fmt::Display` since we use `to_string()`. `Display` already implied
   `ToString`, so this will not break compatibility.

@@ -4,7 +4,8 @@
 
 use assert2::check;
 use matchgen_tests::{
-    most_entity_decode, most_entity_decode_flat, most_entity_decode_slice,
+    most_entity_decode, most_entity_decode_flat, most_entity_decode_flat_const,
+    most_entity_decode_slice,
 };
 use paste::paste;
 
@@ -32,6 +33,18 @@ macro_rules! test {
                 check!(
                     most_entity_decode_flat($input)
                     == ($result, $remainder.as_slice())
+                );
+            }
+
+            #[test]
+            fn [<$name _flat_const>]() {
+                #![allow(clippy::arithmetic_side_effects)] // see assert!
+                let input = $input;
+                let remainder = $remainder;
+                assert!(remainder.len() <= input.len());
+                check!(
+                    most_entity_decode_flat_const(input)
+                    == ($result, input.len() - remainder.len())
                 );
             }
         }
