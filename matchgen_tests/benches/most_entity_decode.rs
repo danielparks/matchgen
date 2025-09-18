@@ -5,7 +5,9 @@
 use criterion::{
     criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
 };
-use matchgen_tests::{most_entity_decode, most_entity_decode_slice};
+use matchgen_tests::{
+    most_entity_decode, most_entity_decode_flat, most_entity_decode_slice,
+};
 use std::time::Duration;
 
 /// Helper for benchmarks.
@@ -27,6 +29,11 @@ macro_rules! benchmark {
             BenchmarkId::new("most_entity_decode_slice", $test_name),
             input,
             |b, input| b.iter(|| most_entity_decode_slice(input)),
+        );
+        $group.bench_with_input(
+            BenchmarkId::new("most_entity_decode_flat", $test_name),
+            input,
+            |b, input| b.iter(|| most_entity_decode_flat(input)),
         );
     }};
 }

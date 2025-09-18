@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## main branch
 
+* Added `FlatMatcher`, which produces a single `match` statement on a slice
+  rather than a tree of `match` statements like `TreeMatcher`.
+* Changed `TreeMatcher::new()` to accept `ToString` instead of
+  `std::fmt::Display` since we use `to_string()`. `Display` already implied
+  `ToString`, so this will not break compatibility.
+
 ## Release 0.3.1 (2025-03-06)
 
 * Added `TreeMatcher::write_to_path()` and `TreeMatcher::write_to_out_dir()` for

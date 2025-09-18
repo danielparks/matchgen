@@ -3,7 +3,9 @@
 #![allow(clippy::missing_docs_in_private_items)]
 
 use iai::black_box;
-use matchgen_tests::{most_entity_decode, most_entity_decode_slice};
+use matchgen_tests::{
+    most_entity_decode, most_entity_decode_flat, most_entity_decode_slice,
+};
 use paste::paste;
 
 /// Helper for benchmarks.
@@ -22,10 +24,16 @@ macro_rules! iai_benchmarks {
                         black_box($input.as_slice())
                     ))
                 }
+
+                fn [<$name _flat>]() -> (Option<&'static str>, &'static [u8]) {
+                    black_box(most_entity_decode_flat(
+                        black_box($input.as_slice())
+                    ))
+                }
             )+
 
             iai::main!(
-                $([<$name _iter>], [<$name _slice>],)+
+                $([<$name _iter>], [<$name _slice>], [<$name _flat>],)+
             );
         }
     }

@@ -1,6 +1,6 @@
 //! Generate code for matchers used in tests.
 
-use matchgen::{Input, TreeMatcher};
+use matchgen::{FlatMatcher, Input, TreeMatcher};
 use std::env;
 use std::error::Error;
 use std::fs::{self, File};
@@ -122,6 +122,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         .doc("Decode most HTML entities.\n\nSlice version.")
         .input_type(Input::Slice)
         .render(&mut out)?;
+    writeln!(out)?;
+
+    let input = fs::read("most-html-entities.json")?;
+    let input: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_slice(&input)?;
+    let mut matcher =
+        FlatMatcher::new("pub fn most_entity_decode_flat", "&'static str");
+    matcher
+        .doc("Decode most HTML entities.\n\nFlat match slice version.")
+        .disable_clippy(true)
+        .extend(input.iter().map(|(name, info)| {
+            (
+                name.as_bytes(),
+                format!("{:?}", info["characters"].as_str().unwrap()),
+            )
+        }));
+    matcher.render(&mut out)?;
     writeln!(out)?;
 
     Ok(())

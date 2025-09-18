@@ -1,8 +1,10 @@
-//! [`TreeMatcher`] can be used from a [build script] to generate a function
-//! that accepts bytes as an input and returns a mapped value if it finds a
-//! given byte sequence at the start of the input.
+//! These matcher builders can be used from a [build script] to generate
+//! functions that accept bytes as an input and return a mapped value if they
+//! find a given byte sequence at the start of the input.
 //!
-//! See [`TreeMatcher`] for example usage.
+//! [`TreeMatcher`] generates more complicated but often faster code, while
+//! [`FlatMatcher`] generates simpler but often slower code. See their
+//! documentation for example usage.
 //!
 //! # Minimum supported Rust version
 //!
@@ -12,6 +14,9 @@
 
 // Lint configuration in Cargo.toml isn’t supported by cargo-geiger.
 #![forbid(unsafe_code)]
+
+mod flat;
+pub use flat::FlatMatcher;
 
 use std::collections::HashMap;
 use std::env;
@@ -99,10 +104,11 @@ impl TreeMatcher {
     /// [`Self::extend()`], then turn it into code with [`Self::render()`].
     ///
     /// See the [struct documentation][TreeMatcher] for a complete example.
+    #[allow(clippy::needless_pass_by_value)] // ToString can borrow.
     pub fn new<N, R>(fn_name: N, return_type: R) -> Self
     where
-        N: fmt::Display,
-        R: fmt::Display,
+        N: ToString,
+        R: ToString,
     {
         Self {
             fn_name: fn_name.to_string(),

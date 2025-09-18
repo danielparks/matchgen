@@ -4,44 +4,65 @@ running 0 tests
 test result: [32mok(B[m. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 timesbar_iter
-  Instructions:                 117
-  L1 Accesses:                  145
+  Instructions:                 118
+  L1 Accesses:                  146
   L2 Accesses:                    1
   RAM Accesses:                  14
-  Estimated Cycles:             640
+  Estimated Cycles:             641
 
 timesbar_slice
   Instructions:                  92
-  L1 Accesses:                  110
+  L1 Accesses:                  113
   L2 Accesses:                    1
-  RAM Accesses:                  15
-  Estimated Cycles:             640
+  RAM Accesses:                  12
+  Estimated Cycles:             538
+
+timesbar_flat
+  Instructions:                  78
+  L1 Accesses:                   88
+  L2 Accesses:                    2
+  RAM Accesses:                  21
+  Estimated Cycles:             833
 
 long_invalid_iter
   Instructions:                  45
   L1 Accesses:                   63
-  L2 Accesses:                    4
-  RAM Accesses:                   4
-  Estimated Cycles:             223
+  L2 Accesses:                    2
+  RAM Accesses:                   6
+  Estimated Cycles:             283
 
 long_invalid_slice
   Instructions:                  35
-  L1 Accesses:                   50
-  L2 Accesses:                    4
-  RAM Accesses:                   4
-  Estimated Cycles:             210
-
-long_none_iter
-  Instructions:                  38
-  L1 Accesses:                   54
-  L2 Accesses:                    4
+  L1 Accesses:                   49
+  L2 Accesses:                    5
   RAM Accesses:                   4
   Estimated Cycles:             214
 
+long_invalid_flat
+  Instructions:                 107
+  L1 Accesses:                  101
+  L2 Accesses:                    5
+  RAM Accesses:                  26
+  Estimated Cycles:            1036
+
+long_none_iter
+  Instructions:                  38
+  L1 Accesses:                   52
+  L2 Accesses:                    5
+  RAM Accesses:                   5
+  Estimated Cycles:             252
+
 long_none_slice
   Instructions:                  31
-  L1 Accesses:                   50
-  L2 Accesses:                    1
-  RAM Accesses:                   2
-  Estimated Cycles:             125
+  L1 Accesses:                   46
+  L2 Accesses:                    3
+  RAM Accesses:                   4
+  Estimated Cycles:             201
+
+long_none_flat
+  Instructions:                  29
+  L1 Accesses:                   45
+  L2 Accesses:                    2
+  RAM Accesses:                   4
+  Estimated Cycles:             195
 
