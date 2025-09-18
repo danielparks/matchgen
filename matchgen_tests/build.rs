@@ -124,13 +124,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         .render(&mut out)?;
     writeln!(out)?;
 
-    writeln!(out, "/// Decode all HTML entities.")?;
     let input = fs::read("most-html-entities.json")?;
     let input: serde_json::Map<String, serde_json::Value> =
         serde_json::from_slice(&input)?;
     let mut matcher =
         FlatMatcher::new("pub fn most_entity_decode_flat", "&'static str");
     matcher
+        .doc("Decode most HTML entities.\n\nFlat match slice version.")
         .disable_clippy(true)
         .extend(input.iter().map(|(name, info)| {
             (

@@ -3,7 +3,9 @@
 #![allow(clippy::missing_docs_in_private_items)]
 
 use iai::black_box;
-use matchgen_tests::{most_entity_decode, most_entity_decode_slice};
+use matchgen_tests::{
+    most_entity_decode, most_entity_decode_flat, most_entity_decode_slice,
+};
 use paste::paste;
 
 /// Helper for benchmarks.

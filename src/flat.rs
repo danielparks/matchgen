@@ -1,5 +1,11 @@
+//! Code for the [`FlatMatcher`].
+
 use std::collections::HashMap;
-use std::io;
+use std::env;
+use std::fmt;
+use std::fs;
+use std::io::{self, Write};
+use std::path::Path;
 
 /// Build a function with a single match statement to quickly map byte sequences
 /// to values.
@@ -76,10 +82,22 @@ pub struct FlatMatcher {
     /// The return type (will be wrapped in [`Option`]), e.g. `"&'static str"`.
     pub return_type: String,
 
-    /// Whether or not to prevent Clippy from evaluating the generated code.
+    /// Whether to prevent Clippy from evaluating the generated code. Defaults
+    /// to `false`.
     ///
     /// See [`Self::disable_clippy()`].
     pub disable_clippy: bool,
+
+    /// Whether to mark the function with [`#[must_use]`][must_use]. Defaults to
+    /// `true`.
+    ///
+    /// [must_use]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-must_use-attribute
+    pub must_use: bool,
+
+    /// Doc attribute, e.g. `#[doc = "Documenation"]`, to add to the function.
+    ///
+    /// Should not have a trailing newline.
+    pub doc: Option<String>,
 
     /// The arms of the match statement.
     pub arms: HashMap<Vec<u8>, String>,
@@ -93,14 +111,18 @@ impl FlatMatcher {
     /// [`Self::extend()`], then turn it into code with [`Self::render()`].
     ///
     /// See the [struct documentation][FlatMatcher] for a complete example.
-    pub fn new<N: AsRef<str>, R: AsRef<str>>(
-        fn_name: N,
-        return_type: R,
-    ) -> Self {
+    #[allow(clippy::needless_pass_by_value)] // ToString can borrow.
+    pub fn new<N, R>(fn_name: N, return_type: R) -> Self
+    where
+        N: ToString,
+        R: ToString,
+    {
         Self {
-            fn_name: fn_name.as_ref().to_string(),
-            return_type: return_type.as_ref().to_string(),
+            fn_name: fn_name.to_string(),
+            return_type: return_type.to_string(),
             disable_clippy: false,
+            must_use: true,
+            doc: None,
             arms: HashMap::default(),
         }
     }
@@ -138,6 +160,256 @@ impl FlatMatcher {
         self
     }
 
+    /// Set whether or not to mark the generated function with [`#[must_use]`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut out = Vec::new();
+    /// matchgen::FlatMatcher::new("fn match_bytes", "u64")
+    ///     .must_use(false)
+    ///     .add("a".as_bytes(), "1")
+    ///     .render(&mut out)
+    ///     .unwrap();
+    ///
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
+    ///     r#"fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     #[allow(unreachable_patterns)]
+    ///     match slice {
+    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    pub fn must_use(&mut self, must_use: bool) -> &mut Self {
+        self.must_use = must_use;
+        self
+    }
+
+    /// Don’t include documentation for the matcher.
+    ///
+    /// This is the default behavior.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut out = Vec::new();
+    /// matchgen::FlatMatcher::new("fn match_bytes", "u64")
+    ///     .remove_doc()
+    ///     .add("a".as_bytes(), "1")
+    ///     .render(&mut out)
+    ///     .unwrap();
+    ///
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
+    ///     r#"#[must_use]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     #[allow(unreachable_patterns)]
+    ///     match slice {
+    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    pub fn remove_doc(&mut self) -> &mut Self {
+        self.doc = None;
+        self
+    }
+
+    /// Set documentation for the matcher to a string.
+    ///
+    /// This is normally what you want. Just pass a string with the
+    /// documentation for your matcher, and it will produce an [attribute][]
+    /// like `#[doc = "My function documentation..."]`.
+    ///
+    /// The `doc` argument should produce a Rust string literal when rendered
+    /// with [`fmt::Debug`]. A normal [`String`] or [`str`] will work.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut out = Vec::new();
+    /// matchgen::FlatMatcher::new("fn match_bytes", "u64")
+    ///     .doc(
+    ///         "Match the first bytes of a slice.
+    ///
+    ///         Matches only the string `\"a\"` and returns `1`."
+    ///     )
+    ///     .add("a".as_bytes(), "1")
+    ///     .render(&mut out)
+    ///     .unwrap();
+    ///
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
+    ///     r#"#[doc = "Match the first bytes of a slice.\n\n        Matches only the string `\"a\"` and returns `1`."]
+    /// #[must_use]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     #[allow(unreachable_patterns)]
+    ///     match slice {
+    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    ///
+    /// [attribute]: https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html
+    pub fn doc<S: fmt::Debug>(&mut self, doc: S) -> &mut Self {
+        self.doc = Some(format!("#[doc = {doc:?}]"));
+        self
+    }
+
+    /// Set documentation for the matcher to a Rust expression.
+    ///
+    /// Generally you want [`Self::doc()`], not this. This can produce an
+    /// [attribute][] like `#[doc = include_str!("my_func.md")]`.
+    ///
+    /// The `doc` argument should produce a Rust expression when rendered with
+    /// [`fmt::Display`]. A normal [`String`] or [`str`] will work.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut out = Vec::new();
+    /// matchgen::FlatMatcher::new("fn match_bytes", "u64")
+    ///     .doc_raw(r#"include_str!("match_bytes.md")"#)
+    ///     .add("a".as_bytes(), "1")
+    ///     .render(&mut out)
+    ///     .unwrap();
+    ///
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
+    ///     r#"#[doc = include_str!("match_bytes.md")]
+    /// #[must_use]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     #[allow(unreachable_patterns)]
+    ///     match slice {
+    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    ///
+    /// [attribute]: https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html
+    pub fn doc_raw<S: fmt::Display>(&mut self, doc: S) -> &mut Self {
+        self.doc = Some(format!("#[doc = {doc}]"));
+        self
+    }
+
+    /// Set documentation for the matcher to an option.
+    ///
+    /// Generally you want [`Self::doc()`], not this. This can produce an
+    /// [attribute][] like `#[doc(hidden)]`.
+    ///
+    /// The `doc` argument should produce the options when rendered with
+    /// [`fmt::Display`]. A normal [`String`] or [`str`] will work.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut out = Vec::new();
+    /// matchgen::FlatMatcher::new("fn match_bytes", "u64")
+    ///     .doc_option("hidden")
+    ///     .render(&mut out)
+    ///     .unwrap();
+    ///
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
+    ///     r#"#[doc(hidden)]
+    /// #[must_use]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     #[allow(unreachable_patterns)]
+    ///     match slice {
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    ///
+    /// [attribute]: https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html
+    pub fn doc_option<S: fmt::Display>(&mut self, doc: S) -> &mut Self {
+        self.doc = Some(format!("#[doc({doc})]"));
+        self
+    }
+
+    /// Write the matcher as a Rust source file in `$OUT_DIR`.
+    ///
+    /// This is what you want if you’re using this in `build.rs` as intended.
+    /// See the [`FlatMatcher`] for a full example.
+    ///
+    /// This will overwrite the file if it already exists, or create a new file
+    /// if it does not.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use std::env::var;
+    /// use std::path::Path;
+    /// use std::fs;
+    ///
+    /// # let tmp_dir = temp_dir::TempDir::new().unwrap();
+    /// # std::env::set_var("OUT_DIR", tmp_dir.path());
+    /// matchgen::FlatMatcher::new("fn match_bytes", "u64")
+    ///     .add("a".as_bytes(), "1")
+    ///     .write_to_out_dir("matcher.rs")
+    ///     .unwrap();
+    ///
+    /// let path = Path::new(&var("OUT_DIR").unwrap()).join("matcher.rs");
+    /// assert!(fs::read_to_string(path).unwrap().contains("fn match_bytes"));
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing the file, or
+    /// if `$OUT_DIR` isn’t set to a UTF-8 string.
+    pub fn write_to_out_dir<P: AsRef<Path>>(
+        &self,
+        sub_path: P,
+    ) -> io::Result<()> {
+        let out_dir = &env::var("OUT_DIR")
+            .map_err(|error| io::Error::new(io::ErrorKind::Other, error))?;
+        self.write_to_path(Path::new(out_dir).join(sub_path))
+    }
+
+    /// Write the matcher as a Rust source file at `path`.
+    ///
+    /// This will overwrite the file if it already exists, or create a new file
+    /// if it does not.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # let tmp_dir = temp_dir::TempDir::new().unwrap();
+    /// # let path = tmp_dir.child("test.rs");
+    /// matchgen::FlatMatcher::new("fn match_bytes", "u64")
+    ///     .add("a".as_bytes(), "1")
+    ///     .write_to_path(&path)
+    ///     .unwrap();
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing to `path`.
+    pub fn write_to_path<P: AsRef<Path>>(&self, path: P) -> io::Result<()> {
+        let mut out = io::BufWriter::new(fs::File::create(path)?);
+        self.render(&mut out)?;
+        out.flush()
+    }
+
     /// Render the matcher into Rust code.
     ///
     /// ### Example
@@ -155,6 +427,7 @@ impl FlatMatcher {
     ///
     /// assert_str_eq!(
     ///     r#"#[cfg(not(clippy))]
+    /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     #[allow(unreachable_patterns)]
     ///     match slice {
@@ -164,6 +437,7 @@ impl FlatMatcher {
     /// }
     ///
     /// #[cfg(clippy)]
+    /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     (None, slice)
     /// }
@@ -171,6 +445,10 @@ impl FlatMatcher {
     ///     out.into_string().unwrap(),
     /// );
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing to `writer`.
     pub fn render<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         if self.disable_clippy {
             writeln!(writer, "#[cfg(not(clippy))]")?;
@@ -190,10 +468,16 @@ impl FlatMatcher {
     /// Render the function that does the matching.
     ///
     /// Generally you should use [`Self::render()`] instead of this.
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing to `writer`.
     pub fn render_func<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         let indent = "    "; // Our formatting prevents embedding this.
         let fn_name = &self.fn_name;
         let return_type = &self.return_type;
+
+        self.render_attributes(writer)?;
 
         write!(
             writer,
@@ -234,10 +518,16 @@ impl FlatMatcher {
     /// Render a stub that does nothing.
     ///
     /// Generally you should use [`Self::render()`] instead of this.
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing to `writer`.
     pub fn render_stub<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         let indent = "    "; // Our formatting prevents embedding this.
         let fn_name = &self.fn_name;
         let return_type = &self.return_type;
+
+        self.render_attributes(writer)?;
 
         write!(
             writer,
@@ -245,6 +535,26 @@ impl FlatMatcher {
             {indent}(None, slice)\n\
             }}\n"
         )?;
+
+        Ok(())
+    }
+
+    /// Render attributes for the function or stub.
+    ///
+    /// # Errors
+    ///
+    /// This can return [`io::Error`] if there is a problem writing to `writer`.
+    fn render_attributes<W: io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> io::Result<()> {
+        if let Some(doc) = &self.doc {
+            writeln!(writer, "{doc}")?;
+        }
+
+        if self.must_use {
+            writeln!(writer, "#[must_use]")?;
+        }
 
         Ok(())
     }

@@ -104,10 +104,11 @@ impl TreeMatcher {
     /// [`Self::extend()`], then turn it into code with [`Self::render()`].
     ///
     /// See the [struct documentation][TreeMatcher] for a complete example.
+    #[allow(clippy::needless_pass_by_value)] // ToString can borrow.
     pub fn new<N, R>(fn_name: N, return_type: R) -> Self
     where
-        N: fmt::Display,
-        R: fmt::Display,
+        N: ToString,
+        R: ToString,
     {
         Self {
             fn_name: fn_name.to_string(),
