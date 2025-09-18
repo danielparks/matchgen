@@ -8,7 +8,7 @@
 //!
 //! # Minimum supported Rust version
 //!
-//! Currently the minimum supported Rust version (MSRV) is **1.60**.
+//! Currently the minimum supported Rust version (MSRV) is **1.56.1**.
 //!
 //! [build script]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 
@@ -268,7 +268,7 @@ impl TreeMatcher {
     ///
     /// [attribute]: https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html
     pub fn doc<S: fmt::Debug>(&mut self, doc: S) -> &mut Self {
-        self.doc = Some(format!("#[doc = {doc:?}]"));
+        self.doc = Some(format!("#[doc = {:?}]", doc));
         self
     }
 
@@ -308,7 +308,7 @@ impl TreeMatcher {
     ///
     /// [attribute]: https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html
     pub fn doc_raw<S: fmt::Display>(&mut self, doc: S) -> &mut Self {
-        self.doc = Some(format!("#[doc = {doc}]"));
+        self.doc = Some(format!("#[doc = {}]", doc));
         self
     }
 
@@ -344,7 +344,7 @@ impl TreeMatcher {
     ///
     /// [attribute]: https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html
     pub fn doc_option<S: fmt::Display>(&mut self, doc: S) -> &mut Self {
-        self.doc = Some(format!("#[doc({doc})]"));
+        self.doc = Some(format!("#[doc({})]", doc));
         self
     }
 
@@ -524,7 +524,7 @@ impl TreeMatcher {
         writer: &mut W,
     ) -> io::Result<()> {
         if let Some(doc) = &self.doc {
-            writeln!(writer, "{doc}")?;
+            writeln!(writer, "{}", doc)?;
         }
 
         if self.must_use {
@@ -732,7 +732,7 @@ impl TreeNode {
     /// # Errors
     ///
     /// This can return [`io::Error`] if there is a problem writing to `writer`.
-    #[allow(clippy::items_after_statements)]
+    #[allow(clippy::items_after_statements, clippy::too_many_lines)]
     pub fn render_iter<W, N, R>(
         &self,
         writer: &mut W,
@@ -754,7 +754,11 @@ impl TreeNode {
                 where\n\
                 {indent}I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,\n\
                 {{\n\
-                {indent}")?;
+                {indent}",
+                fn_name = fn_name,
+                return_type = return_type,
+                indent = indent,
+            )?;
             render_child(self, writer, 0, None)?;
             writeln!(writer, "\n}}")?;
         } else {
@@ -762,7 +766,10 @@ impl TreeNode {
                 writer,
                 "{fn_name}<'a, I>(iter: &mut I) -> Option<{return_type}>\n\
                 where\n\
-                {indent}I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,\n"
+                {indent}I: core::iter::Iterator<Item = &'a u8> + core::clone::Clone,\n",
+                fn_name = fn_name,
+                return_type = return_type,
+                indent = indent,
             )?;
             render_child(self, writer, 0, None)?;
             writeln!(writer)?;
@@ -798,7 +805,8 @@ impl TreeNode {
                     writer,
                     "{{\n\
                     {indent}    let fallback_iter = iter.clone();\n\
-                    {indent}    "
+                    {indent}    ",
+                    indent = indent,
                 )?;
                 render_match(
                     node,
@@ -806,7 +814,7 @@ impl TreeNode {
                     level.checked_add(1).unwrap(),
                     node.leaf.as_ref(),
                 )?;
-                write!(writer, "\n{indent}}}")?;
+                write!(writer, "\n{}}}", indent)?;
             }
 
             Ok(())
@@ -824,7 +832,7 @@ impl TreeNode {
             let indent = "    ".repeat(level);
             writeln!(writer, "match iter.next() {{")?;
             for (chunk, child) in &node.branch {
-                write!(writer, "{indent}    Some({chunk:?}) => ")?;
+                write!(writer, "{}    Some({:?}) => ", indent, chunk)?;
                 render_child(
                     child,
                     writer,
@@ -847,7 +855,9 @@ impl TreeNode {
                 {indent}        *iter = fallback_iter;\n\
                 {indent}        {fallback}\n\
                 {indent}    }}\n\
-                {indent}}}"
+                {indent}}}",
+                indent = indent,
+                fallback = fallback
             )?;
 
             Ok(())
@@ -856,7 +866,7 @@ impl TreeNode {
         /// Format `Option<"Rust code">` as Rust code.
         #[inline]
         fn leaf_to_str(leaf: Option<&String>) -> String {
-            leaf.map(|leaf| format!("Some({leaf})"))
+            leaf.map(|leaf| format!("Some({})", leaf))
                 .unwrap_or_else(|| "None".to_owned())
         }
 
@@ -917,6 +927,9 @@ impl TreeNode {
             writer,
             "{fn_name}(slice: &[u8]) -> (Option<{return_type}>, &[u8]) {{\n\
             {indent}",
+            fn_name = fn_name,
+            return_type = return_type,
+            indent = indent,
         )?;
         render_child(self, writer, 0, None)?;
         writeln!(writer, "\n}}")?;
@@ -935,9 +948,9 @@ impl TreeNode {
             if node.branch.is_empty() {
                 // Terminal. node.leaf should be Some(_), but might not be.
                 if let Some(leaf) = &node.leaf {
-                    write!(writer, "(Some({leaf}), &slice[{index}..])")
+                    write!(writer, "(Some({}), &slice[{}..])", leaf, index)
                 } else if let Some((value, fallback)) = fallback {
-                    write!(writer, "(Some({value}), &slice[{fallback}..])")
+                    write!(writer, "(Some({}), &slice[{}..])", value, fallback)
                 } else {
                     write!(writer, "(None, slice)")
                 }
@@ -946,7 +959,7 @@ impl TreeNode {
                     // For Clippy.
                     writeln!(writer, "match slice.first() {{")?;
                 } else {
-                    writeln!(writer, "match slice.get({index}) {{")?;
+                    writeln!(writer, "match slice.get({}) {{", index)?;
                 }
 
                 let fallback =
@@ -955,7 +968,7 @@ impl TreeNode {
                 let indent = "    ".repeat(next_index);
 
                 for (chunk, child) in &node.branch {
-                    write!(writer, "{indent}    Some({chunk:?}) => ")?;
+                    write!(writer, "{}    Some({:?}) => ", indent, chunk)?;
                     render_child(child, writer, next_index, fallback)?;
                     if child.branch.is_empty() {
                         // render_child() wrote a value, not a match block.
@@ -967,7 +980,7 @@ impl TreeNode {
                 }
 
                 let default = if let Some((value, index)) = fallback {
-                    format!("(Some({value}), &slice[{index}..])")
+                    format!("(Some({}), &slice[{}..])", value, index)
                 } else {
                     "(None, slice)".to_owned()
                 };
@@ -975,7 +988,9 @@ impl TreeNode {
                 write!(
                     writer,
                     "{indent}    _ => {default},\n\
-                    {indent}}}"
+                    {indent}}}",
+                    indent = indent,
+                    default = default,
                 )
             }
         }

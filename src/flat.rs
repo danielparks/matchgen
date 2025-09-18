@@ -264,7 +264,7 @@ impl FlatMatcher {
     ///
     /// [attribute]: https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html
     pub fn doc<S: fmt::Debug>(&mut self, doc: S) -> &mut Self {
-        self.doc = Some(format!("#[doc = {doc:?}]"));
+        self.doc = Some(format!("#[doc = {:?}]", doc));
         self
     }
 
@@ -304,7 +304,7 @@ impl FlatMatcher {
     ///
     /// [attribute]: https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html
     pub fn doc_raw<S: fmt::Display>(&mut self, doc: S) -> &mut Self {
-        self.doc = Some(format!("#[doc = {doc}]"));
+        self.doc = Some(format!("#[doc = {}]", doc));
         self
     }
 
@@ -342,7 +342,7 @@ impl FlatMatcher {
     ///
     /// [attribute]: https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html
     pub fn doc_option<S: fmt::Display>(&mut self, doc: S) -> &mut Self {
-        self.doc = Some(format!("#[doc({doc})]"));
+        self.doc = Some(format!("#[doc({})]", doc));
         self
     }
 
@@ -484,6 +484,9 @@ impl FlatMatcher {
             "{fn_name}(slice: &[u8]) -> (Option<{return_type}>, &[u8]) {{\n\
             {indent}#[allow(unreachable_patterns)]\n\
             {indent}match slice {{\n",
+            fn_name = fn_name,
+            return_type = return_type,
+            indent = indent,
         )?;
 
         // Output entries in longest to shortest order.
@@ -495,12 +498,18 @@ impl FlatMatcher {
                 writeln!(
                     writer,
                     "{indent}    [..] => (Some({value}), slice),",
+                    indent = indent,
+                    value = value,
                 )?;
             } else {
                 let chars = itertools::join(key.iter(), ", ");
                 writeln!(
                     writer,
                     "{indent}    [{chars}, ..] => (Some({value}), &slice[{count}..]),",
+                    indent = indent,
+                    chars = chars,
+                    value = value,
+                    count = count,
                 )?;
             }
         }
@@ -509,7 +518,8 @@ impl FlatMatcher {
             writer,
             "{indent}    _ => (None, slice),\n\
             {indent}}}\n\
-            }}\n"
+            }}\n",
+            indent = indent,
         )?;
 
         Ok(())
@@ -533,7 +543,10 @@ impl FlatMatcher {
             writer,
             "{fn_name}(slice: &[u8]) -> (Option<{return_type}>, &[u8]) {{\n\
             {indent}(None, slice)\n\
-            }}\n"
+            }}\n",
+            fn_name = fn_name,
+            return_type = return_type,
+            indent = indent,
         )?;
 
         Ok(())
@@ -549,7 +562,7 @@ impl FlatMatcher {
         writer: &mut W,
     ) -> io::Result<()> {
         if let Some(doc) = &self.doc {
-            writeln!(writer, "{doc}")?;
+            writeln!(writer, "{}", doc)?;
         }
 
         if self.must_use {

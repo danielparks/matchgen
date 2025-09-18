@@ -6,12 +6,12 @@ version = "0.2.0"
 authors = ["Daniel Parks <oss-matchgen@demonhorse.org>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
-rust-version = "1.60"
+rust-version = "1.56.1"
 
 [features]
 default = []
 # Enable iai benchmarks
-iai = []
+# iai = []
 
 [build-dependencies]
 matchgen = { path = ".." }

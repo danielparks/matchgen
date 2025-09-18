@@ -2,7 +2,7 @@
 
 [![docs.rs](https://img.shields.io/docsrs/matchgen)][docs.rs]
 [![Crates.io](https://img.shields.io/crates/v/matchgen)][crates.io]
-![Rust version 1.60+](https://img.shields.io/badge/Rust%20version-1.60%2B-success)
+![Rust version 1.56.1+](https://img.shields.io/badge/Rust%20version-1.60%2B-success)
 
 [`TreeMatcher`] can be used from a [build script] to generate a matcher
 function that maps byte sequences to arbitrary values. It returns the mapped
