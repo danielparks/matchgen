@@ -3,7 +3,9 @@
 #![allow(clippy::missing_docs_in_private_items)]
 
 use assert2::check;
-use matchgen_tests::{most_entity_decode, most_entity_decode_slice};
+use matchgen_tests::{
+    most_entity_decode, most_entity_decode_flat, most_entity_decode_slice,
+};
 use paste::paste;
 
 macro_rules! test {
@@ -28,7 +30,7 @@ macro_rules! test {
             #[test]
             fn [<$name _flat>]() {
                 check!(
-                    most_entity_decode_slice($input)
+                    most_entity_decode_flat($input)
                     == ($result, $remainder.as_slice())
                 );
             }
