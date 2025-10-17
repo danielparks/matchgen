@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Iterator version.
             \n\
             Really long doc string to ensure that clippy doesn’t complain even
-            though this will have to be will beyond whatever the line length
+            though this will have to be well beyond whatever the line length
             limit is.",
         )
         .disable_clippy(true)
