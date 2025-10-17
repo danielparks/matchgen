@@ -27,6 +27,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         &mut out,
         "pub fn match_nothing_slice",
         "u8",
+        false,
     )?;
     writeln!(out)?;
 
@@ -43,7 +44,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     writeln!(out, "#[must_use]")?;
     matchgen::TreeNode::default()
         .add(b"", "true")
-        .render_slice(&mut out, "pub fn match_nothing_slice_true", "bool")?;
+        .render_slice(
+            &mut out,
+            "pub fn match_nothing_slice_true",
+            "bool",
+            false,
+        )?;
     writeln!(out)?;
 
     TreeMatcher::new("pub fn slice_in_tuple", "(bool, &'static [u8])")
@@ -102,6 +108,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input = fs::read("most-html-entities.json")?;
     let input: serde_json::Map<String, serde_json::Value> =
         serde_json::from_slice(&input)?;
+
     let mut matcher =
         TreeMatcher::new("pub fn most_entity_decode_iter", "&'static str");
     matcher
@@ -121,12 +128,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     matcher
         .doc("Decode most HTML entities.\n\nSlice version.")
         .input_type(Input::Slice)
+        .collapse_nested_single_arms(false)
         .render(&mut out)?;
     writeln!(out)?;
 
-    let input = fs::read("most-html-entities.json")?;
-    let input: serde_json::Map<String, serde_json::Value> =
-        serde_json::from_slice(&input)?;
+    matcher.fn_name = "pub fn most_entity_decode_slice_collapse".to_owned();
+    matcher
+        .doc("Decode most HTML entities.\n\nSlice collapse version.")
+        .input_type(Input::Slice)
+        .collapse_nested_single_arms(true)
+        .render(&mut out)?;
+    writeln!(out)?;
+
     let mut matcher =
         FlatMatcher::new("pub fn most_entity_decode_flat", "&'static str");
     matcher
@@ -141,9 +154,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     matcher.render(&mut out)?;
     writeln!(out)?;
 
-    let input = fs::read("most-html-entities.json")?;
-    let input: serde_json::Map<String, serde_json::Value> =
-        serde_json::from_slice(&input)?;
     let mut matcher = FlatMatcher::new(
         "pub fn most_entity_decode_flat_const",
         "&'static str",

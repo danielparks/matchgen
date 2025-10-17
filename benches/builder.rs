@@ -58,6 +58,30 @@ fn benchmarks(c: &mut Criterion) {
             );
             matcher
                 .doc("Decode most HTML entities.\n\nSlice version.")
+                .collapse_nested_single_arms(false)
+                .disable_clippy(true)
+                .input_type(Input::Slice)
+                .extend(input.iter().map(|(name, info)| {
+                    (
+                        name.as_bytes(),
+                        format!("{:?}", info["characters"].as_str().unwrap()),
+                    )
+                }));
+            matcher.render(&mut out).unwrap();
+            out
+        });
+    });
+
+    group.bench_with_input("slice_collapse", &input, |b, input| {
+        b.iter(|| {
+            let mut out = Vec::with_capacity(1_000_000);
+            let mut matcher = TreeMatcher::new(
+                "pub fn most_entity_decode_slice_collapse",
+                "&'static str",
+            );
+            matcher
+                .doc("Decode most HTML entities.\n\nSlice collapse version.")
+                .collapse_nested_single_arms(true)
                 .disable_clippy(true)
                 .input_type(Input::Slice)
                 .extend(input.iter().map(|(name, info)| {

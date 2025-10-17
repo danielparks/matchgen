@@ -6,6 +6,7 @@ use assert2::check;
 use matchgen_tests::{
     most_entity_decode_flat, most_entity_decode_flat_const,
     most_entity_decode_iter, most_entity_decode_slice,
+    most_entity_decode_slice_collapse,
 };
 use paste::paste;
 
@@ -24,6 +25,14 @@ macro_rules! test {
             fn [<$name _slice>]() {
                 check!(
                     most_entity_decode_slice($input)
+                    == ($result, $remainder.as_slice())
+                );
+            }
+
+            #[test]
+            fn [<$name _slice_collapse>]() {
+                check!(
+                    most_entity_decode_slice_collapse($input)
                     == ($result, $remainder.as_slice())
                 );
             }

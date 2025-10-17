@@ -57,6 +57,14 @@ pub struct TreeMatcher {
     /// The type of input to accept. Defaults to [`Input::Slice`].
     pub input_type: Input,
 
+    /// Whether to collapse nested single arm `match` statements.
+    ///
+    /// This will use a flat slice `match` arm instead of a series of single arm
+    /// nested `match` statements.
+    ///
+    /// Only applies when [`Self::input_type`] is [`Input::Slice`].
+    pub collapse_nested_single_arms: bool,
+
     /// Whether to prevent Clippy from evaluating the generated code. Defaults
     /// to `false`.
     ///
@@ -96,6 +104,7 @@ impl TreeMatcher {
             fn_name: fn_name.to_string(),
             return_type: return_type.to_string(),
             input_type: Input::Slice,
+            collapse_nested_single_arms: true,
             disable_clippy: false,
             must_use: true,
             doc: None,
@@ -115,6 +124,79 @@ impl TreeMatcher {
         V: Into<String>,
     {
         self.root.add(key, value);
+        self
+    }
+
+    /// Set whether to collapse nested single arm `match`s (for slice input).
+    ///
+    /// This only works if the input is a slice, not an iterator. It collapses
+    /// nested single arm `match` statements into a flat slice match arm.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut out = Vec::new();
+    /// matchgen::TreeMatcher::new("fn match_bytes", "u64")
+    ///     .collapse_nested_single_arms(true)
+    ///     .add("abc".as_bytes(), "1")
+    ///     .render(&mut out)
+    ///     .unwrap();
+    ///
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
+    ///     r#"#[allow(
+    ///     clippy::missing_const_for_fn,
+    ///     clippy::single_match_else,
+    ///     clippy::too_many_lines,
+    /// )]
+    /// #[must_use]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     match slice {
+    ///         [b'a', b'b', b'c', ..] => (Some(1), &slice[3..]),
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    ///
+    /// Versus
+    ///
+    /// ```rust
+    /// let mut out = Vec::new();
+    /// matchgen::TreeMatcher::new("fn match_bytes", "u64")
+    ///     .collapse_nested_single_arms(false)
+    ///     .add("abc".as_bytes(), "1")
+    ///     .render(&mut out)
+    ///     .unwrap();
+    ///
+    /// use bstr::ByteVec;
+    /// pretty_assertions::assert_str_eq!(
+    ///     r#"#[allow(
+    ///     clippy::missing_const_for_fn,
+    ///     clippy::single_match_else,
+    ///     clippy::too_many_lines,
+    /// )]
+    /// #[must_use]
+    /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
+    ///     match slice {
+    ///         [b'a', ..] => match &slice[1..] {
+    ///             [b'b', ..] => match &slice[2..] {
+    ///                 [b'c', ..] => (Some(1), &slice[3..]),
+    ///                 _ => (None, slice),
+    ///             }
+    ///             _ => (None, slice),
+    ///         }
+    ///         _ => (None, slice),
+    ///     }
+    /// }
+    /// "#,
+    ///     out.into_string().unwrap(),
+    /// );
+    /// ```
+    pub fn collapse_nested_single_arms(&mut self, enable: bool) -> &mut Self {
+        self.collapse_nested_single_arms = enable;
         self
     }
 
@@ -488,10 +570,12 @@ impl TreeMatcher {
         self.render_attributes(writer)?;
 
         match self.input_type {
-            Input::Slice => {
-                self.root
-                    .render_slice(writer, &self.fn_name, &self.return_type)
-            }
+            Input::Slice => self.root.render_slice(
+                writer,
+                &self.fn_name,
+                &self.return_type,
+                self.collapse_nested_single_arms,
+            ),
             Input::Iterator => {
                 self.root
                     .render_iter(writer, &self.fn_name, &self.return_type)
@@ -514,6 +598,7 @@ impl TreeMatcher {
                 writer,
                 &self.fn_name,
                 &self.return_type,
+                self.collapse_nested_single_arms,
             ),
             Input::Iterator => TreeNode::default().render_iter(
                 writer,
@@ -901,13 +986,16 @@ impl TreeNode {
     ///      `"pub fn matcher"`.
     ///   3. The return type (will be wrapped in [`Option`] and a tuple), e.g.
     ///      `"&'static str"`.
+    ///   4. Whether or not to collapse nested single arm `match`s into a flat
+    ///      slice match (See
+    ///      [`TreeMatcher::collapse_nested_single_arms()`]).
     ///
     /// # Example
     ///
     /// ```rust
     /// let mut out = Vec::new();
     /// matchgen::TreeNode::from_iter([("a".as_bytes(), "1")])
-    ///     .render_slice(&mut out, "fn match_bytes", "u64")
+    ///     .render_slice(&mut out, "fn match_bytes", "u64", false)
     ///     .unwrap();
     ///
     /// use bstr::ByteVec;
@@ -933,6 +1021,7 @@ impl TreeNode {
         writer: &mut W,
         fn_name: N,
         return_type: R,
+        collapse_nested_single_arms: bool,
     ) -> io::Result<()>
     where
         W: io::Write,
@@ -949,7 +1038,7 @@ impl TreeNode {
             return_type = return_type,
             indent = indent,
         )?;
-        render_child(self, writer, 0, None)?;
+        render_child(self, writer, 0, "", None, collapse_nested_single_arms)?;
         writeln!(writer, "}}")?;
 
         // FIXME: this is recursive, so for long patterns it could blow out the
@@ -961,8 +1050,11 @@ impl TreeNode {
             node: &TreeNode,
             writer: &mut W,
             index: usize,
+            indent: &str,
             fallback: Option<(&String, usize)>,
+            collapse_nested_single_arms: bool,
         ) -> io::Result<()> {
+            /// Render a subslice operation.
             #[must_use]
             #[inline]
             fn slice_str(i: usize) -> String {
@@ -1005,17 +1097,35 @@ impl TreeNode {
 
                 let fallback =
                     node.leaf.as_ref().map(|leaf| (leaf, index)).or(fallback);
-                let next_index = index.checked_add(1).unwrap();
-                let indent = "    ".repeat(next_index);
+                let indent = format!("{}    ", indent);
 
-                for (&byte, child) in &node.branch {
+                for (&byte, mut child) in &node.branch {
+                    let mut bytes = vec![byte];
+                    while collapse_nested_single_arms
+                        && child.branch.len() == 1
+                        && child.leaf.is_none()
+                    {
+                        let byte;
+                        (byte, child) = child.branch.iter().next().unwrap();
+                        bytes.push(*byte);
+                    }
                     write!(
                         writer,
-                        "{indent}    [{byte}, ..] => ",
+                        "{indent}    [{bytes}..] => ",
                         indent = indent,
-                        byte = crate::fmt_byte(byte),
+                        bytes = bytes
+                            .iter()
+                            .map(|&b| crate::fmt_byte(b) + ", ")
+                            .collect::<String>(),
                     )?;
-                    render_child(child, writer, next_index, fallback)?;
+                    render_child(
+                        child,
+                        writer,
+                        index.checked_add(bytes.len()).unwrap(),
+                        &indent,
+                        fallback,
+                        collapse_nested_single_arms,
+                    )?;
                 }
 
                 let default = if let Some((value, index)) = fallback {

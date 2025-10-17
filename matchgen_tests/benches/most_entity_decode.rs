@@ -6,6 +6,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use matchgen_tests::{
     most_entity_decode_flat, most_entity_decode_flat_const,
     most_entity_decode_iter, most_entity_decode_slice,
+    most_entity_decode_slice_collapse,
 };
 use std::time::Duration;
 
@@ -27,6 +28,11 @@ macro_rules! benchmark {
             BenchmarkId::new("slice", $test_name),
             input,
             |b, input| b.iter(|| most_entity_decode_slice(input)),
+        );
+        $group.bench_with_input(
+            BenchmarkId::new("slice_collapse", $test_name),
+            input,
+            |b, input| b.iter(|| most_entity_decode_slice_collapse(input)),
         );
         $group.bench_with_input(
             BenchmarkId::new("flat", $test_name),

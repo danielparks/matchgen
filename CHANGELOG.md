@@ -4,17 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## main branch
 
+* Changed `TreeMatcher` to use a flat slice match, e.g. `match slice { [1, 2, 3,
+  ..] => ...`, instead of nested single-arm `match` statements by default.
+
+  This generates code that is slightly slower at run time, but takes
+  significantly less time to build. In particular, it reduced [htmlize] build
+  times by more than half.
+
 * Added `FlatMatcher`, which produces a single `match` statement on a slice
   rather than a tree of `match` statements like `TreeMatcher`.
 
   `FlatMatcher` can also be set to return the index of the next unmatched byte
   rather than a slice of the remainder, which automatically causes the resulting
   matcher to be `const`.
+
 * Changed `TreeMatcher::new()` to accept `ToString` instead of
   `std::fmt::Display` since we use `to_string()`. `Display` already implied
   `ToString`, so this will not break compatibility.
+
 * Made minor changes to decrease the MSRV from 1.60 to **1.56.1**.
 * Fix a few spelling mistakes in documentation.
+
+[htmlize]: https://crates.io/crates/htmlize
 
 ## Release 0.3.1 (2025-03-06)
 
