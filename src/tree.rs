@@ -152,8 +152,8 @@ impl TreeMatcher {
     /// pretty_assertions::assert_str_eq!(
     ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
-    ///     match slice.first() {
-    ///         Some(97) => (Some(1), &slice[1..]),
+    ///     match slice {
+    ///         [97, ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -198,8 +198,8 @@ impl TreeMatcher {
     ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
-    ///     match slice.first() {
-    ///         Some(97) => (Some(1), &slice[1..]),
+    ///     match slice {
+    ///         [97, ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -241,8 +241,8 @@ impl TreeMatcher {
     /// #[doc = "Match the first bytes of a slice.\n\n        Matches only the string `\"a\"` and returns `1`."]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
-    ///     match slice.first() {
-    ///         Some(97) => (Some(1), &slice[1..]),
+    ///     match slice {
+    ///         [97, ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -281,8 +281,8 @@ impl TreeMatcher {
     /// #[doc = include_str!("match_bytes.md")]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
-    ///     match slice.first() {
-    ///         Some(97) => (Some(1), &slice[1..]),
+    ///     match slice {
+    ///         [97, ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -415,8 +415,8 @@ impl TreeMatcher {
     ///     r#"#[cfg(not(clippy))]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
-    ///     match slice.first() {
-    ///         Some(97) => (Some(1), &slice[1..]),
+    ///     match slice {
+    ///         [97, ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -542,8 +542,8 @@ where
     ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
-    ///     match slice.first() {
-    ///         Some(97) => (Some(1), &slice[1..]),
+    ///     match slice {
+    ///         [97, ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -881,8 +881,8 @@ impl TreeNode {
     /// pretty_assertions::assert_str_eq!(
     ///     "\
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
-    ///     match slice.first() {
-    ///         Some(97) => (Some(1), &slice[1..]),
+    ///     match slice {
+    ///         [97, ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -930,6 +930,16 @@ impl TreeNode {
             index: usize,
             fallback: Option<(&String, usize)>,
         ) -> io::Result<()> {
+            #[must_use]
+            #[inline]
+            fn slice_str(i: usize) -> String {
+                if i > 0 {
+                    format!("&slice[{}..]", i)
+                } else {
+                    "slice".to_owned()
+                }
+            }
+
             if node.branch.is_empty() {
                 // Terminal. Write a value, followed by a comma if this is a
                 // nested `match` statement.
@@ -938,29 +948,27 @@ impl TreeNode {
                 if let Some(leaf) = &node.leaf {
                     writeln!(
                         writer,
-                        "(Some({leaf}), &slice[{index}..]){comma}",
+                        "(Some({leaf}), {slice}){comma}",
                         leaf = leaf,
-                        index = index,
+                        slice = slice_str(index),
                         comma = comma
                     )
                 } else if let Some((value, fallback)) = fallback {
                     writeln!(
                         writer,
-                        "(Some({value}), &slice[{fallback}..]){comma}",
+                        "(Some({value}), {slice}){comma}",
                         value = value,
-                        fallback = fallback,
+                        slice = slice_str(fallback),
                         comma = comma
                     )
                 } else {
                     writeln!(writer, "(None, slice){comma}", comma = comma)
                 }
             } else {
-                if index == 0 {
-                    // For Clippy.
-                    writeln!(writer, "match slice.first() {{")?;
-                } else {
-                    writeln!(writer, "match slice.get({}) {{", index)?;
-                }
+                // `&slice[n..]` returns `[]` when `n == slice.len()`, so as
+                // long as we return on `[]` in the previous `match`, this will
+                // never panic.
+                writeln!(writer, "match {} {{", slice_str(index))?;
 
                 let fallback =
                     node.leaf.as_ref().map(|leaf| (leaf, index)).or(fallback);
@@ -968,16 +976,17 @@ impl TreeNode {
                 let indent = "    ".repeat(next_index);
 
                 for (chunk, child) in &node.branch {
-                    write!(writer, "{}    Some({:?}) => ", indent, chunk)?;
+                    write!(writer, "{}    [{:?}, ..] => ", indent, chunk)?;
                     render_child(child, writer, next_index, fallback)?;
                 }
 
                 let default = if let Some((value, index)) = fallback {
-                    format!("(Some({}), &slice[{}..])", value, index)
+                    format!("(Some({}), {})", value, slice_str(index))
                 } else {
                     "(None, slice)".to_owned()
                 };
 
+                // This catches the `[]` case.
                 writeln!(
                     writer,
                     "{indent}    _ => {default},\n\
