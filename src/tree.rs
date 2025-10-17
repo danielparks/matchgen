@@ -917,7 +917,7 @@ impl TreeNode {
             indent = indent,
         )?;
         render_child(self, writer, 0, None)?;
-        writeln!(writer, "\n}}")?;
+        writeln!(writer, "}}")?;
 
         // FIXME: this is recursive, so for long patterns it could blow out the
         // stack. Transform this to an iterative algorithm.
@@ -931,13 +931,28 @@ impl TreeNode {
             fallback: Option<(&String, usize)>,
         ) -> io::Result<()> {
             if node.branch.is_empty() {
-                // Terminal. node.leaf should be Some(_), but might not be.
+                // Terminal. Write a value, followed by a comma if this is a
+                // nested `match` statement.
+                let comma = if index > 0 { "," } else { "" };
+                // node.leaf should be Some(_), but might not be.
                 if let Some(leaf) = &node.leaf {
-                    write!(writer, "(Some({}), &slice[{}..])", leaf, index)
+                    writeln!(
+                        writer,
+                        "(Some({leaf}), &slice[{index}..]){comma}",
+                        leaf = leaf,
+                        index = index,
+                        comma = comma
+                    )
                 } else if let Some((value, fallback)) = fallback {
-                    write!(writer, "(Some({}), &slice[{}..])", value, fallback)
+                    writeln!(
+                        writer,
+                        "(Some({value}), &slice[{fallback}..]){comma}",
+                        value = value,
+                        fallback = fallback,
+                        comma = comma
+                    )
                 } else {
-                    write!(writer, "(None, slice)")
+                    writeln!(writer, "(None, slice){comma}", comma = comma)
                 }
             } else {
                 if index == 0 {
@@ -955,13 +970,6 @@ impl TreeNode {
                 for (chunk, child) in &node.branch {
                     write!(writer, "{}    Some({:?}) => ", indent, chunk)?;
                     render_child(child, writer, next_index, fallback)?;
-                    if child.branch.is_empty() {
-                        // render_child() wrote a value, not a match block.
-                        writeln!(writer, ",")?;
-                    } else {
-                        // render_child() wrote a match block.
-                        writeln!(writer)?;
-                    }
                 }
 
                 let default = if let Some((value, index)) = fallback {
@@ -970,7 +978,7 @@ impl TreeNode {
                     "(None, slice)".to_owned()
                 };
 
-                write!(
+                writeln!(
                     writer,
                     "{indent}    _ => {default},\n\
                     {indent}}}",
