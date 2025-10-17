@@ -1,4 +1,4 @@
-# Docker image for running `cargo bench --features iai iai`. Use docker.sh to
+# Docker image for running `cargo bench --features iai_ iai`. Use docker.sh to
 # build and run.
 
 FROM ubuntu:latest

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: ./docker.sh cargo bench --features iai iai
+# Usage: ./docker.sh cargo bench --features iai_ iai
 # Interactive usage: ./docker.sh
 
 set -eo pipefail

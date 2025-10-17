@@ -1,6 +1,7 @@
 //! Benchmark generated `most_entity_decode*` functions with [`iai`].
 
 #![allow(clippy::missing_docs_in_private_items)]
+#![allow(clippy::incompatible_msrv)] // Tests should be run under recent Rust.
 
 use iai::black_box;
 use matchgen_tests::{

@@ -11,7 +11,7 @@ rust-version = "1.56.1"
 [features]
 default = []
 # Enable iai benchmarks
-# iai = []
+iai_ = []
 
 [build-dependencies]
 matchgen = { path = ".." }
@@ -30,7 +30,7 @@ bench = false
 [[bench]]
 name = "most_entity_decode_iai"
 harness = false
-required-features = ["iai"]
+required-features = ["iai_"]
 
 [[bench]]
 name = "most_entity_decode"
