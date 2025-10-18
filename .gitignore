@@ -2,4 +2,5 @@
 !/target/criterion
 /matchgen_tests/target/*
 !/matchgen_tests/target/iai
+/matchgen_tests/target/iai/**/*.old
 **/*.rs.bk

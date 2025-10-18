@@ -4,65 +4,65 @@ running 0 tests
 test result: [32mok(B[m. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 timesbar_iter
-  Instructions:                 118
-  L1 Accesses:                  146
-  L2 Accesses:                    1
-  RAM Accesses:                  14
-  Estimated Cycles:             641
+  Instructions:                 118 (No change)
+  L1 Accesses:                  140 (-4.109589%)
+  L2 Accesses:                    3 (+200.0000%)
+  RAM Accesses:                  15 (+7.142857%)
+  Estimated Cycles:             680 (+6.084243%)
 
 timesbar_slice
-  Instructions:                  92
-  L1 Accesses:                  113
-  L2 Accesses:                    1
-  RAM Accesses:                  12
-  Estimated Cycles:             538
+  Instructions:                  97 (+5.434783%)
+  L1 Accesses:                  114 (+0.884956%)
+  L2 Accesses:                    2 (+100.0000%)
+  RAM Accesses:                  16 (+33.33333%)
+  Estimated Cycles:             684 (+27.13755%)
 
 timesbar_flat
-  Instructions:                  78
-  L1 Accesses:                   88
-  L2 Accesses:                    2
-  RAM Accesses:                  21
-  Estimated Cycles:             833
+  Instructions:                  81 (+3.846154%)
+  L1 Accesses:                   91 (+3.409091%)
+  L2 Accesses:                    2 (No change)
+  RAM Accesses:                  22 (+4.761905%)
+  Estimated Cycles:             871 (+4.561825%)
 
 long_invalid_iter
-  Instructions:                  45
-  L1 Accesses:                   63
-  L2 Accesses:                    2
-  RAM Accesses:                   6
-  Estimated Cycles:             283
+  Instructions:                  43 (-4.444444%)
+  L1 Accesses:                   57 (-9.523810%)
+  L2 Accesses:                    3 (+50.00000%)
+  RAM Accesses:                   6 (No change)
+  Estimated Cycles:             282 (-0.353357%)
 
 long_invalid_slice
-  Instructions:                  35
-  L1 Accesses:                   49
-  L2 Accesses:                    5
-  RAM Accesses:                   4
-  Estimated Cycles:             214
+  Instructions:                  38 (+8.571429%)
+  L1 Accesses:                   55 (+12.24490%)
+  L2 Accesses:                    2 (-60.00000%)
+  RAM Accesses:                   5 (+25.00000%)
+  Estimated Cycles:             240 (+12.14953%)
 
 long_invalid_flat
-  Instructions:                 107
-  L1 Accesses:                  101
-  L2 Accesses:                    5
-  RAM Accesses:                  26
-  Estimated Cycles:            1036
+  Instructions:                 118 (+10.28037%)
+  L1 Accesses:                  120 (+18.81188%)
+  L2 Accesses:                    3 (-40.00000%)
+  RAM Accesses:                  27 (+3.846154%)
+  Estimated Cycles:            1080 (+4.247104%)
 
 long_none_iter
-  Instructions:                  38
-  L1 Accesses:                   52
-  L2 Accesses:                    5
-  RAM Accesses:                   5
-  Estimated Cycles:             252
+  Instructions:                  37 (-2.631579%)
+  L1 Accesses:                   50 (-3.846154%)
+  L2 Accesses:                    3 (-40.00000%)
+  RAM Accesses:                   5 (No change)
+  Estimated Cycles:             240 (-4.761905%)
 
 long_none_slice
-  Instructions:                  31
-  L1 Accesses:                   46
-  L2 Accesses:                    3
-  RAM Accesses:                   4
-  Estimated Cycles:             201
+  Instructions:                  34 (+9.677419%)
+  L1 Accesses:                   50 (+8.695652%)
+  L2 Accesses:                    2 (-33.33333%)
+  RAM Accesses:                   5 (+25.00000%)
+  Estimated Cycles:             235 (+16.91542%)
 
 long_none_flat
-  Instructions:                  29
-  L1 Accesses:                   45
-  L2 Accesses:                    2
-  RAM Accesses:                   4
-  Estimated Cycles:             195
+  Instructions:                  32 (+10.34483%)
+  L1 Accesses:                   48 (+6.666667%)
+  L2 Accesses:                    2 (No change)
+  RAM Accesses:                   5 (+25.00000%)
+  Estimated Cycles:             233 (+19.48718%)
 
