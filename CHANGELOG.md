@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
   `std::fmt::Display` since we use `to_string()`. `Display` already implied
   `ToString`, so this will not break compatibility.
 * Made minor changes to decrease the MSRV from 1.60 to **1.56.1**.
+* Fix a few spelling mistakes in documentation.
 
 ## Release 0.3.1 (2025-03-06)
 

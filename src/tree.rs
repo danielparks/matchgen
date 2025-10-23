@@ -69,7 +69,7 @@ pub struct TreeMatcher {
     /// [must_use]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-must_use-attribute
     pub must_use: bool,
 
-    /// Doc attribute, e.g. `#[doc = "Documenation"]`, to add to the function.
+    /// Doc attribute, e.g. `#[doc = "Documentation"]`, to add to the function.
     ///
     /// Should not have a trailing newline.
     pub doc: Option<String>,
