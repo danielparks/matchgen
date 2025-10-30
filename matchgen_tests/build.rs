@@ -103,7 +103,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input: serde_json::Map<String, serde_json::Value> =
         serde_json::from_slice(&input)?;
     let mut matcher =
-        TreeMatcher::new("pub fn most_entity_decode", "&'static str");
+        TreeMatcher::new("pub fn most_entity_decode_iter", "&'static str");
     matcher
         .doc("Decode most HTML entities.\n\nIterator version.")
         .disable_clippy(true)

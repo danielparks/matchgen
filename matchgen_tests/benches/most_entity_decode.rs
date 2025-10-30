@@ -6,7 +6,7 @@ use criterion::{
     criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
 };
 use matchgen_tests::{
-    most_entity_decode, most_entity_decode_flat, most_entity_decode_slice,
+    most_entity_decode_flat, most_entity_decode_iter, most_entity_decode_slice,
 };
 use std::time::Duration;
 
@@ -16,12 +16,12 @@ macro_rules! benchmark {
         let input = $input;
         $group.throughput(Throughput::Bytes(input.len().try_into().unwrap()));
         $group.bench_with_input(
-            BenchmarkId::new("most_entity_decode", $test_name),
+            BenchmarkId::new("most_entity_decode_iter", $test_name),
             input,
             |b, input| {
                 b.iter(|| {
                     let mut iter = input.iter();
-                    most_entity_decode(&mut iter)
+                    most_entity_decode_iter(&mut iter)
                 })
             },
         );

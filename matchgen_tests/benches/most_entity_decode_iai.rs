@@ -5,7 +5,7 @@
 
 use iai::black_box;
 use matchgen_tests::{
-    most_entity_decode, most_entity_decode_flat, most_entity_decode_slice,
+    most_entity_decode_flat, most_entity_decode_iter, most_entity_decode_slice,
 };
 use paste::paste;
 
@@ -17,7 +17,7 @@ macro_rules! iai_benchmarks {
                 fn [<$name _iter>]() -> Option<&'static str> {
                     let input = black_box($input);
                     let mut iter = input.iter();
-                    black_box(most_entity_decode(&mut iter))
+                    black_box(most_entity_decode_iter(&mut iter))
                 }
 
                 fn [<$name _slice>]() -> (Option<&'static str>, &'static [u8]) {

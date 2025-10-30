@@ -4,8 +4,8 @@
 
 use assert2::check;
 use matchgen_tests::{
-    most_entity_decode, most_entity_decode_flat, most_entity_decode_flat_const,
-    most_entity_decode_slice,
+    most_entity_decode_flat, most_entity_decode_flat_const,
+    most_entity_decode_iter, most_entity_decode_slice,
 };
 use paste::paste;
 
@@ -16,7 +16,7 @@ macro_rules! test {
             fn [<$name _iter>]() {
                 let input = $input;
                 let mut iter = input.iter();
-                check!(most_entity_decode(&mut iter) == $result);
+                check!(most_entity_decode_iter(&mut iter) == $result);
                 check!(iter.as_slice() == $remainder);
             }
 
