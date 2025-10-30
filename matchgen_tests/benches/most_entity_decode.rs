@@ -2,9 +2,7 @@
 
 #![allow(clippy::missing_docs_in_private_items, missing_docs)]
 
-use criterion::{
-    criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use matchgen_tests::{
     most_entity_decode_flat, most_entity_decode_iter, most_entity_decode_slice,
 };
@@ -14,9 +12,8 @@ use std::time::Duration;
 macro_rules! benchmark {
     ( $group:expr, $test_name:expr, $input:expr ) => {{
         let input = $input;
-        $group.throughput(Throughput::Bytes(input.len().try_into().unwrap()));
         $group.bench_with_input(
-            BenchmarkId::new("most_entity_decode_iter", $test_name),
+            BenchmarkId::new("iter", $test_name),
             input,
             |b, input| {
                 b.iter(|| {
@@ -26,12 +23,12 @@ macro_rules! benchmark {
             },
         );
         $group.bench_with_input(
-            BenchmarkId::new("most_entity_decode_slice", $test_name),
+            BenchmarkId::new("slice", $test_name),
             input,
             |b, input| b.iter(|| most_entity_decode_slice(input)),
         );
         $group.bench_with_input(
-            BenchmarkId::new("most_entity_decode_flat", $test_name),
+            BenchmarkId::new("flat", $test_name),
             input,
             |b, input| b.iter(|| most_entity_decode_flat(input)),
         );
@@ -39,7 +36,7 @@ macro_rules! benchmark {
 }
 
 fn benchmarks(c: &mut Criterion) {
-    let mut group = c.benchmark_group("a");
+    let mut group = c.benchmark_group("most_entity_decode");
     group
         .noise_threshold(0.10)
         .significance_level(0.01)
