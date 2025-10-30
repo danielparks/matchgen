@@ -389,7 +389,6 @@ version = "0.3.1"
 dependencies = [
  "bstr",
  "criterion",
- "itertools",
  "pretty_assertions",
  "serde_json",
  "temp-dir",

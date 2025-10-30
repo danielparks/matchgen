@@ -25,3 +25,18 @@ mod tree;
 
 pub use flat::*;
 pub use tree::*;
+
+/// Output a byte to source code
+fn fmt_byte(b: u8) -> String {
+    if b.is_ascii_graphic() || b == b' ' {
+        format!("b'{}'", b as char)
+    } else if b == b'\n' {
+        r"\n".to_owned()
+    } else if b == b'\r' {
+        r"\r".to_owned()
+    } else if b == b'\t' {
+        r"\t".to_owned()
+    } else {
+        b.to_string()
+    }
+}

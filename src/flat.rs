@@ -232,7 +232,7 @@ impl FlatMatcher {
     ///     r#"fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     #[allow(unreachable_patterns)]
     ///     match slice {
-    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         [b'a', ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -267,7 +267,7 @@ impl FlatMatcher {
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     #[allow(unreachable_patterns)]
     ///     match slice {
-    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         [b'a', ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -310,7 +310,7 @@ impl FlatMatcher {
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     #[allow(unreachable_patterns)]
     ///     match slice {
-    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         [b'a', ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -350,7 +350,7 @@ impl FlatMatcher {
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     #[allow(unreachable_patterns)]
     ///     match slice {
-    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         [b'a', ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -488,7 +488,7 @@ impl FlatMatcher {
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     #[allow(unreachable_patterns)]
     ///     match slice {
-    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         [b'a', ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -553,7 +553,9 @@ impl FlatMatcher {
                 prefix = if count == 0 {
                     String::new()
                 } else {
-                    format!("{}, ", itertools::join(key.iter(), ", "))
+                    key.iter()
+                        .map(|&b| crate::fmt_byte(b) + ", ")
+                        .collect::<String>()
                 },
                 value = value,
                 remainder = if self.return_slice {

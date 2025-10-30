@@ -153,7 +153,7 @@ impl TreeMatcher {
     ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         [b'a', ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -199,7 +199,7 @@ impl TreeMatcher {
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         [b'a', ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -242,7 +242,7 @@ impl TreeMatcher {
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         [b'a', ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -282,7 +282,7 @@ impl TreeMatcher {
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         [b'a', ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -416,7 +416,7 @@ impl TreeMatcher {
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         [b'a', ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -543,7 +543,7 @@ where
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         [b'a', ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -702,7 +702,7 @@ impl TreeNode {
     /// {
     ///     let fallback_iter = iter.clone();
     ///     match iter.next() {
-    ///         Some(97) => Some(1),
+    ///         Some(b'a') => Some(1),
     ///         _ => {
     ///             *iter = fallback_iter;
     ///             None
@@ -816,8 +816,13 @@ impl TreeNode {
         ) -> io::Result<()> {
             let indent = "    ".repeat(level);
             writeln!(writer, "match iter.next() {{")?;
-            for (chunk, child) in &node.branch {
-                write!(writer, "{}    Some({:?}) => ", indent, chunk)?;
+            for (&byte, child) in &node.branch {
+                write!(
+                    writer,
+                    "{indent}    Some({byte}) => ",
+                    indent = indent,
+                    byte = crate::fmt_byte(byte),
+                )?;
                 render_child(
                     child,
                     writer,
@@ -882,7 +887,7 @@ impl TreeNode {
     ///     "\
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [97, ..] => (Some(1), &slice[1..]),
+    ///         [b'a', ..] => (Some(1), &slice[1..]),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -975,8 +980,13 @@ impl TreeNode {
                 let next_index = index.checked_add(1).unwrap();
                 let indent = "    ".repeat(next_index);
 
-                for (chunk, child) in &node.branch {
-                    write!(writer, "{}    [{:?}, ..] => ", indent, chunk)?;
+                for (&byte, child) in &node.branch {
+                    write!(
+                        writer,
+                        "{indent}    [{byte}, ..] => ",
+                        indent = indent,
+                        byte = crate::fmt_byte(byte),
+                    )?;
                     render_child(child, writer, next_index, fallback)?;
                 }
 
