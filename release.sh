@@ -106,6 +106,7 @@ awk-in-place Cargo.toml '
   { print }'
 
 # Fix docs.rs links in README, if present
+echo 'Updating links in README.md'
 for name in $(crate-names) ; do
   awk-in-place README.md '{
       sub(/https:\/\/docs\.rs\/'"$name"'\/[0-9]+.[0-9]+.[0-9]+\//, \
@@ -118,7 +119,9 @@ cargo check --quiet
 
 # Do semver checks only if there is a version on crates.io to compare to.
 # FIXME: can’t tell if crates.io search failed for another reason.
-if (cd / && cargo info "$(crate-names | head -1)" &>/dev/null) ; then
+main_crate_name=$(crate-names | head -1)
+if (cd / && cargo info "$main_crate_name" &>/dev/null) ; then
+  echo 'Doing semantic versioning checks'
   cargo semver-checks || { echo ; confirm 'Release anyway?' ; }
 fi
 
