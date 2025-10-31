@@ -150,7 +150,11 @@ impl TreeMatcher {
     ///
     /// use bstr::ByteVec;
     /// pretty_assertions::assert_str_eq!(
-    ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
+    ///     r#"#[allow(
+    ///     clippy::missing_const_for_fn,
+    ///     clippy::single_match_else,
+    ///     clippy::too_many_lines,
+    /// )]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
     ///         [b'a', ..] => (Some(1), &slice[1..]),
@@ -195,7 +199,11 @@ impl TreeMatcher {
     ///
     /// use bstr::ByteVec;
     /// pretty_assertions::assert_str_eq!(
-    ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
+    ///     r#"#[allow(
+    ///     clippy::missing_const_for_fn,
+    ///     clippy::single_match_else,
+    ///     clippy::too_many_lines,
+    /// )]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
@@ -237,7 +245,11 @@ impl TreeMatcher {
     ///
     /// use bstr::ByteVec;
     /// pretty_assertions::assert_str_eq!(
-    ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
+    ///     r#"#[allow(
+    ///     clippy::missing_const_for_fn,
+    ///     clippy::single_match_else,
+    ///     clippy::too_many_lines,
+    /// )]
     /// #[doc = "Match the first bytes of a slice.\n\n        Matches only the string `\"a\"` and returns `1`."]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
@@ -277,7 +289,11 @@ impl TreeMatcher {
     ///
     /// use bstr::ByteVec;
     /// pretty_assertions::assert_str_eq!(
-    ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
+    ///     r#"#[allow(
+    ///     clippy::missing_const_for_fn,
+    ///     clippy::single_match_else,
+    ///     clippy::too_many_lines,
+    /// )]
     /// #[doc = include_str!("match_bytes.md")]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
@@ -316,7 +332,11 @@ impl TreeMatcher {
     ///
     /// use bstr::ByteVec;
     /// pretty_assertions::assert_str_eq!(
-    ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
+    ///     r#"#[allow(
+    ///     clippy::missing_const_for_fn,
+    ///     clippy::single_match_else,
+    ///     clippy::too_many_lines,
+    /// )]
     /// #[doc(hidden)]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
@@ -422,6 +442,7 @@ impl TreeMatcher {
     /// }
     ///
     /// #[cfg(clippy)]
+    /// #[allow(clippy::missing_const_for_fn)]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     (None, slice)
@@ -457,10 +478,11 @@ impl TreeMatcher {
     /// This can return [`io::Error`] if there is a problem writing to `writer`.
     fn render_func<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         if !self.disable_clippy {
-            writeln!(
-                writer,
-                "#[allow(clippy::too_many_lines, clippy::single_match_else)]"
-            )?;
+            writeln!(writer, "#[allow(")?;
+            writeln!(writer, "    clippy::missing_const_for_fn,")?;
+            writeln!(writer, "    clippy::single_match_else,")?;
+            writeln!(writer, "    clippy::too_many_lines,")?;
+            writeln!(writer, ")]")?;
         }
 
         self.render_attributes(writer)?;
@@ -483,6 +505,8 @@ impl TreeMatcher {
     ///
     /// This can return [`io::Error`] if there is a problem writing to `writer`.
     fn render_stub<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+        writeln!(writer, "#[allow(clippy::missing_const_for_fn)]")?;
+
         self.render_attributes(writer)?;
 
         match self.input_type {
@@ -539,7 +563,11 @@ where
     ///
     /// use bstr::ByteVec;
     /// pretty_assertions::assert_str_eq!(
-    ///     r#"#[allow(clippy::too_many_lines, clippy::single_match_else)]
+    ///     r#"#[allow(
+    ///     clippy::missing_const_for_fn,
+    ///     clippy::single_match_else,
+    ///     clippy::too_many_lines,
+    /// )]
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
