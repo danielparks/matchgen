@@ -1105,9 +1105,10 @@ impl TreeNode {
                         && child.branch.len() == 1
                         && child.leaf.is_none()
                     {
-                        let byte;
-                        (byte, child) = child.branch.iter().next().unwrap();
-                        bytes.push(*byte);
+                        // Destructuring assignments are unstable in 1.56.1
+                        let tuple = child.branch.iter().next().unwrap();
+                        bytes.push(*tuple.0);
+                        child = tuple.1;
                     }
                     write!(
                         writer,
