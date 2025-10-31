@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+## main branch
+
 ## Release 0.4.0 (2025-10-31)
 
 * Changed `TreeMatcher` to use a flat slice match, e.g. `match slice { [1, 2, 3,
