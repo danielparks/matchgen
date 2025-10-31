@@ -27,4 +27,5 @@ jobs:
     steps:
       - uses: danielparks/github-actions/create-release@main
         with:
+          package-options: -p matchgen
           token: ${{ secrets.GITHUB_TOKEN }}
