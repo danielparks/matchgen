@@ -756,7 +756,7 @@ pub struct TreeNode {
     ///
     /// If none of these characters match, then return `leaf` as the match
     /// (it might be None, indicating that nothing matches).
-    pub branch: HashMap<u8, TreeNode>,
+    pub branch: HashMap<u8, Self>,
 }
 
 impl TreeNode {
