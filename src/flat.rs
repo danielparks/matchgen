@@ -1,5 +1,6 @@
 //! Code for the [`FlatMatcher`].
 
+use std::cmp;
 use std::collections::HashMap;
 use std::env;
 use std::fmt;
@@ -543,7 +544,7 @@ impl FlatMatcher {
 
         // Output entries in longest to shortest order.
         let mut entries: Vec<_> = self.arms.iter().collect();
-        entries.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
+        entries.sort_by_key(|(key, _)| cmp::Reverse(key.len()));
         for (key, value) in entries {
             let count = key.len();
             writeln!(
