@@ -34,6 +34,12 @@ crate-names () {
   cargo metadata --format-version 1 --no-deps | jq -r '.packages[].name'
 }
 
+crate-names-to-publish () {
+  # I’m not sure why publish shows up as [] for false and null for true.
+  cargo metadata --format-version 1 --no-deps \
+    | jq -r '.packages[] | select(.publish == null) |.name'
+}
+
 branch-name () {
   git rev-parse --abbrev-ref HEAD
 }
@@ -103,6 +109,12 @@ if [[ "$(branch-name)" = main ]] ; then
   git switch -c "release-$version"
 fi
 
+if [[ -z "$(crate-names-to-publish)" ]] ; then
+  echo 'Could not find any packages to publish.' >&2
+  echo '(Check that crate-names-to-publish function still works.)' >&2
+  exit 1
+fi
+
 check-changes
 
 echo 'Making sure version is correct.'
@@ -169,7 +181,7 @@ git tag --force --sign --file "$changelog" --cleanup=verbatim "v${version}"
 git push --force --tags origin HEAD
 auto-pr "Release ${version}"
 
-cargo publish
+cargo publish $(crate-names-to-publish | sed -e 's/^/-p /')
 
 awk-in-place CHANGELOG.md '
   /^## Release/ && !done {
