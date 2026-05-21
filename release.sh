@@ -105,10 +105,6 @@ command -v parse-changelog &>/dev/null || {
   exit 1
 }
 
-if [[ "$(branch-name)" = main ]] ; then
-  git switch -c "release-$version"
-fi
-
 if [[ -z "$(crate-names-to-publish)" ]] ; then
   echo 'Could not find any packages to publish.' >&2
   echo '(Check that crate-names-to-publish function still works.)' >&2
@@ -167,6 +163,9 @@ confirm 'Release notes displayed above. Continue?'
 
 # Commit version bump if necessary.
 check-changes &>/dev/null || {
+  if [[ "$(branch-name)" = main ]] ; then
+    git switch -c "release-$version"
+  fi
   git add -u
   git commit --cleanup=verbatim --file - <<EOF
 Release ${version}
@@ -179,7 +178,11 @@ check-changes
 
 git tag --force --sign --file "$changelog" --cleanup=verbatim "v${version}"
 git push --force --tags origin HEAD
-auto-pr "Release ${version}"
+
+if [[ "$(branch-name)" != main ]] ; then
+  # Only need a PR if something was changed.
+  auto-pr "Release ${version}"
+fi
 
 cargo publish $(crate-names-to-publish | sed -e 's/^/-p /')
 
