@@ -59,8 +59,8 @@ pub struct TreeMatcher {
 
     /// Whether to collapse nested single arm `match` statements.
     ///
-    /// This will use a flat slice `match` arm instead of a series of single arm
-    /// nested `match` statements.
+    /// This will use a flat slice `match` arm instead of a series of single
+    /// arm nested `match` statements.
     ///
     /// Only applies when [`Self::input_type`] is [`Input::Slice`].
     pub collapse_nested_single_arms: bool,
@@ -71,8 +71,8 @@ pub struct TreeMatcher {
     /// See [`Self::disable_clippy()`].
     pub disable_clippy: bool,
 
-    /// Whether to mark the function with [`#[must_use]`][must_use]. Defaults to
-    /// `true`.
+    /// Whether to mark the function with [`#[must_use]`][must_use]. Defaults
+    /// to `true`.
     ///
     /// [must_use]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-must_use-attribute
     pub must_use: bool,
@@ -688,7 +688,7 @@ pub enum Input {
     /// ```
     ///
     ///   * The prefixes it checks do not all have to be the same length.
-    ///   * If more than one prefix matches, it will return the longest one.
+    ///   * If more than one prefix matches, it will return the longest.
     ///   * If nothing matches, it will return `(None, &input)`.
     ///
     /// Since the matchers only check the start of the input, you will want to
@@ -704,8 +704,8 @@ pub enum Input {
     ///
     /// The generated function will accept an iterator over bytes
     /// (`core::iter::Iterator<Item = &'a u8>`) and will return a match if it
-    /// finds a given byte sequence at the start of the iterator. It will update
-    /// the iterator to move past the match (and no farther).
+    /// finds a given byte sequence at the start of the iterator. It will
+    /// update the iterator to move past the match (and no farther).
     ///
     /// For example, suppose you generate a [matcher for all HTML
     /// entities][htmlize] called `entity_matcher()`:
@@ -720,12 +720,12 @@ pub enum Input {
     ///     The matcher will clone the iterator if it needs to look ahead, so
     ///     when the matcher returns the iterator will only have consumed what
     ///     was matched.
-    ///   * **If more than one prefix matches, it will return the longest one.**
+    ///   * **If more than one prefix matches, it will return the longest.**
     ///   * **If nothing matches, the iterator will not be advanced.** You may
     ///     want to call `iterator.next()` if the matcher returns `None`.
-    ///   * **It only checks the start of the iterator.** Often you will want to
-    ///     use [`position()`] or the [memchr crate][memchr] to find the start
-    ///     of a potential match.
+    ///   * **It only checks the start of the iterator.** Often you will want
+    ///     to use [`position()`] or the [memchr crate][memchr] to find the
+    ///     start of a potential match.
     ///
     /// [`position()`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.position
     /// [memchr]: http://docs.rs/memchr
@@ -793,10 +793,10 @@ impl TreeNode {
     ///
     ///   1. An instance of [`std::io::Write`], like [`std::io::stdout()`], a
     ///      file, or a [`Vec`].
-    ///   2. The first part of the function definition to generate, e.g.
-    ///      `"pub fn matcher"`.
-    ///   3. The return type (will be wrapped in [`Option`]), e.g.
-    ///      `"&'static str"`.
+    ///   2. The first part of the function definition to generate, e.g. `"pub
+    ///      fn matcher"`.
+    ///   3. The return type (will be wrapped in [`Option`]), e.g. `"&'static
+    ///      str"`.
     ///
     /// # Example
     ///
@@ -982,13 +982,12 @@ impl TreeNode {
     ///
     ///   1. An instance of [`std::io::Write`], like [`std::io::stdout()`], a
     ///      file, or a [`Vec`].
-    ///   2. The first part of the function definition to generate, e.g.
-    ///      `"pub fn matcher"`.
+    ///   2. The first part of the function definition to generate, e.g. `"pub
+    ///      fn matcher"`.
     ///   3. The return type (will be wrapped in [`Option`] and a tuple), e.g.
     ///      `"&'static str"`.
     ///   4. Whether or not to collapse nested single arm `match`s into a flat
-    ///      slice match (See
-    ///      [`TreeMatcher::collapse_nested_single_arms()`]).
+    ///      slice match (See [`TreeMatcher::collapse_nested_single_arms()`]).
     ///
     /// # Example
     ///
