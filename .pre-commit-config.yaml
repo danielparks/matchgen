@@ -24,7 +24,14 @@ repos:
     hooks:
       - id: typos
         args: []
-        exclude: "target/"
+        exclude: "target/|matchgen_tests/most-html-entities\\.json"
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.25.2
+    hooks:
+      - id: zizmor
+        args:
+          - "--no-progress" # https://github.com/zizmorcore/zizmor/issues/582
+          - "--persona=pedantic"
   - repo: local
     hooks:
       - id: cargo clippy
