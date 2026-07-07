@@ -35,7 +35,7 @@ crate-names () {
 }
 
 crate-names-to-publish () {
-  # I’m not sure why publish shows up as [] for false and null for true.
+  # I’m not sure why publish is [] for false and null for true (the default).
   cargo metadata --format-version 1 --no-deps \
     | jq -r '.packages[] | select(.publish == null) |.name'
 }
@@ -46,7 +46,7 @@ branch-name () {
 
 auto-pr () {
   local branch_name="$(branch-name)"
-  if [[ "$(branch-name)" = main ]] ; then
+  if [[ "$branch_name" = main ]] ; then
     echo "Cannot auto-pr on main branch." >&2
     return 1
   fi
