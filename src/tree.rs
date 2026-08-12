@@ -152,7 +152,7 @@ impl TreeMatcher {
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [b'a', b'b', b'c', ..] => (Some(1), &slice[3..]),
+    ///         [b'a', b'b', b'c', rest_3 @ ..] => (Some(1), rest_3),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -181,9 +181,9 @@ impl TreeMatcher {
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [b'a', ..] => match &slice[1..] {
-    ///             [b'b', ..] => match &slice[2..] {
-    ///                 [b'c', ..] => (Some(1), &slice[3..]),
+    ///         [b'a', rest_1 @ ..] => match rest_1 {
+    ///             [b'b', rest_2 @ ..] => match rest_2 {
+    ///                 [b'c', rest_3 @ ..] => (Some(1), rest_3),
     ///                 _ => (None, slice),
     ///             }
     ///             _ => (None, slice),
@@ -239,7 +239,7 @@ impl TreeMatcher {
     /// )]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [b'a', ..] => (Some(1), &slice[1..]),
+    ///         [b'a', rest_1 @ ..] => (Some(1), rest_1),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -289,7 +289,7 @@ impl TreeMatcher {
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [b'a', ..] => (Some(1), &slice[1..]),
+    ///         [b'a', rest_1 @ ..] => (Some(1), rest_1),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -336,7 +336,7 @@ impl TreeMatcher {
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [b'a', ..] => (Some(1), &slice[1..]),
+    ///         [b'a', rest_1 @ ..] => (Some(1), rest_1),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -380,7 +380,7 @@ impl TreeMatcher {
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [b'a', ..] => (Some(1), &slice[1..]),
+    ///         [b'a', rest_1 @ ..] => (Some(1), rest_1),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -518,7 +518,7 @@ impl TreeMatcher {
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [b'a', ..] => (Some(1), &slice[1..]),
+    ///         [b'a', rest_1 @ ..] => (Some(1), rest_1),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -656,7 +656,7 @@ where
     /// #[must_use]
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [b'a', ..] => (Some(1), &slice[1..]),
+    ///         [b'a', rest_1 @ ..] => (Some(1), rest_1),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -1002,7 +1002,7 @@ impl TreeNode {
     ///     "\
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     match slice {
-    ///         [b'a', ..] => (Some(1), &slice[1..]),
+    ///         [b'a', rest_1 @ ..] => (Some(1), rest_1),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -1053,12 +1053,15 @@ impl TreeNode {
             fallback: Option<(&String, usize)>,
             collapse_nested_single_arms: bool,
         ) -> io::Result<()> {
-            /// Render a subslice operation.
+            /// Render the binding name for the remainder slice at byte index
+            /// `i`. Index 0 is the function parameter `slice`; deeper levels
+            /// are bound by `rest_N @ ..` patterns introduced in this
+            /// function.
             #[must_use]
             #[inline]
-            fn slice_str(i: usize) -> String {
+            fn rest_name(i: usize) -> String {
                 if i > 0 {
-                    format!("&slice[{}..]", i)
+                    format!("rest_{}", i)
                 } else {
                     "slice".to_owned()
                 }
@@ -1072,27 +1075,27 @@ impl TreeNode {
                 if let Some(leaf) = &node.leaf {
                     writeln!(
                         writer,
-                        "(Some({leaf}), {slice}){comma}",
+                        "(Some({leaf}), {rest}){comma}",
                         leaf = leaf,
-                        slice = slice_str(index),
+                        rest = rest_name(index),
                         comma = comma
                     )
                 } else if let Some((value, fallback)) = fallback {
                     writeln!(
                         writer,
-                        "(Some({value}), {slice}){comma}",
+                        "(Some({value}), {rest}){comma}",
                         value = value,
-                        slice = slice_str(fallback),
+                        rest = rest_name(fallback),
                         comma = comma
                     )
                 } else {
                     writeln!(writer, "(None, slice){comma}", comma = comma)
                 }
             } else {
-                // `&slice[n..]` returns `[]` when `n == slice.len()`, so as
-                // long as we return on `[]` in the previous `match`, this will
-                // never panic.
-                writeln!(writer, "match {} {{", slice_str(index))?;
+                // The `rest_N @ ..` binding in the enclosing arm always
+                // succeeds (it matches any tail, including `[]`), so this
+                // `match` is safe even when the remainder is empty.
+                writeln!(writer, "match {} {{", rest_name(index))?;
 
                 let fallback =
                     node.leaf.as_ref().map(|leaf| (leaf, index)).or(fallback);
@@ -1109,19 +1112,21 @@ impl TreeNode {
                         bytes.push(*tuple.0);
                         child = tuple.1;
                     }
+                    let new_index = index.checked_add(bytes.len()).unwrap();
                     write!(
                         writer,
-                        "{indent}    [{bytes}..] => ",
+                        "{indent}    [{bytes}{rest} @ ..] => ",
                         indent = indent,
                         bytes = bytes
                             .iter()
                             .map(|&b| crate::fmt_byte(b) + ", ")
                             .collect::<String>(),
+                        rest = rest_name(new_index),
                     )?;
                     render_child(
                         child,
                         writer,
-                        index.checked_add(bytes.len()).unwrap(),
+                        new_index,
                         &indent,
                         fallback,
                         collapse_nested_single_arms,
@@ -1129,7 +1134,7 @@ impl TreeNode {
                 }
 
                 let default = if let Some((value, index)) = fallback {
-                    format!("(Some({}), {})", value, slice_str(index))
+                    format!("(Some({}), {})", value, rest_name(index))
                 } else {
                     "(None, slice)".to_owned()
                 };

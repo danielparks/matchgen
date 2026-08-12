@@ -14,6 +14,11 @@ All notable changes to this project will be documented in this file.
 
   Thanks to [Utkarsh Gupta](https://github.com/utkarshgupta137) for the [PR](https://github.com/danielparks/matchgen/pull/95)!
 
+* Changed generated slice matchers to use slice destructuring bindings instead
+  of repeated `&slice[N..]` indexing.
+
+  This eliminates extraneous indexing checks.
+
 ## Release 0.4.0 (2025-10-31)
 
 * Changed `TreeMatcher` to use a flat slice match, e.g. `match slice { [1, 2, 3,
