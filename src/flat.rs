@@ -237,7 +237,7 @@ impl FlatMatcher {
     ///     r#"fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     #[allow(unreachable_patterns)]
     ///     match slice {
-    ///         [b'a', ..] => (Some(1), &slice[1..]),
+    ///         [b'a', rest @ ..] => (Some(1), rest),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -272,7 +272,7 @@ impl FlatMatcher {
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     #[allow(unreachable_patterns)]
     ///     match slice {
-    ///         [b'a', ..] => (Some(1), &slice[1..]),
+    ///         [b'a', rest @ ..] => (Some(1), rest),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -315,7 +315,7 @@ impl FlatMatcher {
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     #[allow(unreachable_patterns)]
     ///     match slice {
-    ///         [b'a', ..] => (Some(1), &slice[1..]),
+    ///         [b'a', rest @ ..] => (Some(1), rest),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -355,7 +355,7 @@ impl FlatMatcher {
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     #[allow(unreachable_patterns)]
     ///     match slice {
-    ///         [b'a', ..] => (Some(1), &slice[1..]),
+    ///         [b'a', rest @ ..] => (Some(1), rest),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -493,7 +493,7 @@ impl FlatMatcher {
     /// fn match_bytes(slice: &[u8]) -> (Option<u64>, &[u8]) {
     ///     #[allow(unreachable_patterns)]
     ///     match slice {
-    ///         [b'a', ..] => (Some(1), &slice[1..]),
+    ///         [b'a', rest @ ..] => (Some(1), rest),
     ///         _ => (None, slice),
     ///     }
     /// }
@@ -551,24 +551,31 @@ impl FlatMatcher {
         entries.sort_by_key(|(key, _)| cmp::Reverse(key.len()));
         for (key, value) in entries {
             let count = key.len();
-            writeln!(
-                writer,
-                "{indent}    [{prefix}..] => (Some({value}), {remainder}),",
-                indent = indent,
-                prefix = if count == 0 {
-                    String::new()
-                } else {
-                    key.iter()
-                        .map(|&b| crate::fmt_byte(b) + ", ")
-                        .collect::<String>()
-                },
-                value = value,
-                remainder = if self.return_slice {
-                    format!("&slice[{}..]", count)
-                } else {
-                    count.to_string()
-                },
-            )?;
+            let prefix = if count == 0 {
+                String::new()
+            } else {
+                key.iter()
+                    .map(|&b| crate::fmt_byte(b) + ", ")
+                    .collect::<String>()
+            };
+            if self.return_slice {
+                writeln!(
+                    writer,
+                    "{indent}    [{prefix}rest @ ..] => (Some({value}), rest),",
+                    indent = indent,
+                    prefix = prefix,
+                    value = value,
+                )?;
+            } else {
+                writeln!(
+                    writer,
+                    "{indent}    [{prefix}..] => (Some({value}), {count}),",
+                    indent = indent,
+                    prefix = prefix,
+                    value = value,
+                    count = count,
+                )?;
+            }
         }
 
         write!(
